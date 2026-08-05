@@ -12,29 +12,34 @@
     background: #ccc;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
-    padding: 20px 0;
+    align-items: center;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
   }
   .screen {
-    width: 390px;
-    height: 844px;
+    width: 100%;
+    max-width: 430px;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 900px;
     background: #fff;
-    border-radius: 12px;
-    padding: 14px;
+    border-radius: 0;
+    padding: 10px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
     overflow: hidden;
   }
   .cards-row {
     border: 1px solid #ddd;
     border-radius: 10px;
-    padding: 8px;
+    padding: 6px;
     display: flex;
     flex-wrap: wrap;
     align-content: flex-start;
-    gap: 6px;
-    height: 128px;
+    gap: 5px;
+    height: 112px;
   }
   .cards-row .label {
     width: 100%;
@@ -42,15 +47,15 @@
     color: #888;
   }
   .card {
-    width: 40px;
-    height: 56px;
+    width: 34px;
+    height: 46px;
     flex: 0 0 auto;
     border: 1px solid #999;
     border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: bold;
     background: #fff;
   }
@@ -180,9 +185,6 @@
 
 <div class="screen">
 
-  <div class="margin-row" style="text-align:left;">
-    <span style="background:#222;color:#fff;padding:2px 6px;border-radius:4px;">BUILD: v4 (result amount, blank settled odds, bj reveal)</span>
-  </div>
   <div class="margin-row">
     Margin: <select id="marginSelect" onchange="onMarginChange()">
       <option value="0.02">2%</option>
