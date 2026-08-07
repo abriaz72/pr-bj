@@ -742,6 +742,7 @@ function startDeal() {
   renderCards('dealerRow', dealer, true);
 
   const requiresPeek = upcardRequiresPeek(dealerUp);
+  phase = requiresPeek ? 'awaiting_peek' : 'player_turn';
 
   // Show real odds for the actual dealt hand immediately -- don't wait
   // for the peek to resolve. Before the peek, if blackjack is genuinely
@@ -757,7 +758,6 @@ function startDeal() {
   }
 
   if (requiresPeek) {
-    phase = 'awaiting_peek';
     setMainButton('Check for dealer blackjack');
     return;
   }
@@ -781,9 +781,9 @@ function proceedAfterPeek() {
     return;
   }
 
+  phase = 'player_turn';
   const [pTotal, pSoft] = player.totalAndSoft();
   setOddsDisplay(playerPhaseOdds(pTotal, pSoft, dealerUp.value()));
-  phase = 'player_turn';
   setMainButton('Next card');
 }
 
