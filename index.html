@@ -602,7 +602,7 @@ function cashoutValueFor(outcome) {
 
 function renderCashoutOptions() {
   const section = document.getElementById('cashoutSection');
-  const canCashOut = phase === 'player_turn' || phase === 'dealer_turn';
+  const canCashOut = phase === 'awaiting_peek' || phase === 'player_turn' || phase === 'dealer_turn';
 
   if (!canCashOut) {
     section.innerHTML = '';
@@ -725,9 +725,16 @@ function startDeal() {
   renderCards('playerRow', player, false);
   renderCards('dealerRow', dealer, true);
 
+  // Show real odds for the actual dealt hand immediately -- don't wait
+  // for the peek to resolve. If the peek later finds a blackjack, the
+  // hand ends and overrides whatever was showing, same as any other
+  // sudden result.
+  if (!player.blackjack()) {
+    const [pTotal, pSoft] = player.totalAndSoft();
+    setOddsDisplay(playerPhaseOdds(pTotal, pSoft, dealerUp.value()));
+  }
+
   if (upcardRequiresPeek(dealerUp)) {
-    // Stop here. The dealt cards stay on screen, hole card still hidden,
-    // until the user explicitly presses to check for dealer blackjack.
     phase = 'awaiting_peek';
     setMainButton('Check for dealer blackjack');
     return;
