@@ -104,6 +104,38 @@
     overflow-y: auto;
   }
   .bets-list div { padding: 1px 0; }
+  .cashout-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .cashout-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #d9e8d9;
+    background: #f4fbf4;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  .cashout-row .cashout-label {
+    flex: 1;
+    color: #333;
+  }
+  .cashout-row .cashout-value {
+    font-weight: bold;
+    color: #1a7d1a;
+  }
+  .cashout-row button {
+    border: none;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .cashout-row .yes-btn { background: #1a7d1a; color: #fff; }
+  .cashout-row .no-btn { background: #eee; color: #555; }
   .result-banner {
     text-align: center;
     font-size: 15px;
@@ -225,6 +257,8 @@
   </div>
 
   <div class="bets-list" id="betsList"></div>
+
+  <div class="cashout-section" id="cashoutSection"></div>
 
   <div class="result-banner" id="resultBanner"></div>
 
@@ -483,6 +517,7 @@ function setOddsDisplay(odds) {
   document.getElementById('odds-dealer').textContent = odds.dealer ? odds.dealer.toFixed(2) : '--';
   document.getElementById('odds-push').textContent = odds.push ? odds.push.toFixed(2) : '--';
   document.getElementById('odds-player').textContent = odds.player ? odds.player.toFixed(2) : '--';
+  renderCashoutOptions();
 }
 
 function setOddsSettled(isSettled) {
@@ -521,6 +556,7 @@ function placeBet() {
   renderBets();
   renderPositions();
   renderSession();
+  renderCashoutOptions();
 }
 
 function renderBets() {
@@ -554,6 +590,53 @@ function renderSession() {
   const sign = net >= 0 ? '+' : '-';
   document.getElementById('sessionRow').textContent =
     `Staked £${sessionStaked.toFixed(2)} · Returned £${sessionReturned.toFixed(2)} · Net ${sign}£${Math.abs(net).toFixed(2)}`;
+}
+
+function cashoutValueFor(outcome) {
+  const matching = bets.filter(b => b.outcome === outcome);
+  if (matching.length === 0) return null;
+  const current = currentOdds[outcome];
+  if (!current) return null;
+  return matching.reduce((total, b) => total + (b.stake * b.odds / current), 0);
+}
+
+function renderCashoutOptions() {
+  const section = document.getElementById('cashoutSection');
+  const canCashOut = phase === 'player_turn' || phase === 'dealer_turn';
+
+  if (!canCashOut) {
+    section.innerHTML = '';
+    return;
+  }
+
+  const rows = ['dealer', 'push', 'player'].map(outcome => {
+    const value = cashoutValueFor(outcome);
+    if (value === null) return '';
+    const label = outcome.charAt(0).toUpperCase() + outcome.slice(1);
+    return `<div class="cashout-row">
+      <span class="cashout-label">Cash out ${label}</span>
+      <span class="cashout-value">£${value.toFixed(2)}</span>
+      <button class="yes-btn" onclick="confirmCashout('${outcome}')">Yes</button>
+      <button class="no-btn" onclick="declineCashout()">No</button>
+    </div>`;
+  }).join('');
+
+  section.innerHTML = rows;
+}
+
+function confirmCashout(outcome) {
+  const value = cashoutValueFor(outcome);
+  if (value === null) return;
+  sessionReturned += value;
+  bets = bets.filter(b => b.outcome !== outcome);
+  renderSession();
+  renderBets();
+  renderPositions();
+  renderCashoutOptions();
+}
+
+function declineCashout() {
+  // No action -- the position stays open and keeps updating live.
 }
 
 function showResult(outcome, amount) {
@@ -596,6 +679,7 @@ function newGame() {
   document.getElementById('dealerRow').innerHTML = '<div class="label" id="dealerLabel">Dealer</div>';
   document.getElementById('playerRow').innerHTML = '<div class="label" id="playerLabel">Player</div>';
   document.querySelectorAll('.odds-box').forEach(el => el.classList.remove('selected'));
+  document.getElementById('cashoutSection').innerHTML = '';
   setOddsSettled(false);
   renderBets();
   renderPositions();
