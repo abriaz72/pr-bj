@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Prediction Blackjack</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, Helvetica, Arial, sans-serif;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  .screen {
+    width: 100%;
+    max-width: 430px;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 900px;
+    background: #000;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+    font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+  }
+  .margin-row { font-size: 11px; color: #888; text-align: right; }
+  .margin-row select { font-size: 11px; background: #000; color: #fff; border: 1px solid #444; }
+  .session-row { font-size: 11px; color: #888; text-align: left; }
+
+  .hand-label { color: #00E5FF; font-size: 10px; letter-spacing: 1px; margin-bottom: 4px; }
+  .hand-row {
+    position: relative;
+    display: flex;
+    gap: 6px;
+    padding-top: 12px;
+    margin-bottom: 8px;
+    min-height: 52px;
+  }
+  .card {
+    width: 34px;
+    height: 46px;
+    flex: 0 0 auto;
+    border: 1px solid #00E5FF44;
+    border-radius: 3px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+  }
+  .card .rank { font-size: 14px; font-weight: 500; line-height: 1; }
+  .card .suit { font-size: 12px; line-height: 1; margin-top: 3px; }
+  .card.hidden {
+    background: repeating-linear-gradient(45deg, #0a1a1c, #0a1a1c 4px, #000 4px, #000 8px);
+  }
+  .score-badge {
+    position: absolute;
+    top: -2px;
+    left: -10px;
+    background: #fff;
+    color: #000;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    border: 2px solid #000;
+  }
+
+  .odds-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: #222;
+  }
+  .odds-box {
+    background: #000;
+    border: 1px solid #222;
+    padding: 10px 0;
+    text-align: center;
+    cursor: pointer;
+  }
+  .odds-box.selected { background: #000; border-color: #00E5FF; }
+  .odds-box.selected .name { color: #00E5FF; }
+  .odds-box.selected .value { color: #00E5FF; }
+  .odds-box.settled { opacity: 0.35; }
+  .odds-box .name { color: #888; font-size: 10px; margin-bottom: 2px; }
+  .odds-box .value { color: #fff; font-size: 20px; font-weight: 600; }
+
+  .position-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: #222;
+    font-size: 12px;
+  }
+  .position-box { background: #000; padding: 6px 0; text-align: center; color: #888; }
+  .position-box.positive { color: #3DDC97; }
+  .position-box.negative { color: #E5484D; }
+
+  .bets-list { font-size: 11px; color: #aaa; max-height: 36px; overflow-y: auto; }
+  .bets-list div { padding: 1px 0; }
+
+  .cashout-section { display: flex; flex-direction: column; gap: 4px; }
+  .cashout-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #00E5FF44;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  .cashout-row .cashout-label { flex: 1; color: #ccc; }
+  .cashout-row .cashout-value { font-weight: 700; color: #3DDC97; }
+  .cashout-row button { border: none; border-radius: 4px; padding: 5px 10px; font-size: 11px; font-weight: 700; font-family: inherit; }
+  .cashout-row .yes-btn { background: #00E5FF; color: #001a1e; }
+  .cashout-row .no-btn { background: #222; color: #888; }
+
+  .result-banner {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 8px;
+    min-height: 16px;
+    color: #fff;
+    border: 1px solid #222;
+  }
+
+  .spacer { flex: 1; }
+
+  .preset-row { display: flex; gap: 6px; }
+  .preset-row button {
+    flex: 1;
+    padding: 8px 0;
+    border: 1px solid #00E5FF44;
+    background: #000;
+    color: #00E5FF;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+  }
+  .preset-row .edit-presets { flex: 0 0 auto; width: 28px; color: #888; border: 1px solid #333; font-weight: normal; }
+
+  .controls { display: flex; gap: 8px; }
+  .controls input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid #00E5FF44;
+    background: #000;
+    color: #fff;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .controls button {
+    padding: 10px 16px;
+    border: 1px solid #00E5FF;
+    background: #000;
+    color: #00E5FF;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+  }
+
+  .main-action-row button {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #00E5FF;
+    background: #000;
+    color: #00E5FF;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    font-family: inherit;
+  }
+
+  /* ---------- Animations ---------- */
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(-14px) scale(0.85); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes oddsPulse {
+    0% { background: #000; border-color: #00E5FF; }
+    30% { background: #012026; border-color: #00E5FF; }
+    100% { background: #000; border-color: #222; }
+  }
+  .card.animate-in { animation-name: cardIn; animation-timing-function: ease-out; animation-fill-mode: backwards; }
+  .odds-box.pulse { animation-name: oddsPulse; animation-timing-function: ease-out; }
+</style>
+</head>
+<body>
+
+<div class="screen">
+
+  <div class="margin-row">
+    Margin: <select id="marginSelect" onchange="onMarginChange()">
+      <option value="0.02">2%</option>
+      <option value="0.03">3%</option>
+      <option value="0.05" selected>5%</option>
+    </select>
+  </div>
+
+  <div class="session-row" id="sessionRow">Staked £0.00 · Returned £0.00 · Net £0.00</div>
+
+  <div class="hand-label">DEALER</div>
+  <div class="hand-row" id="dealerRow"></div>
+
+  <div class="hand-label">PLAYER</div>
+  <div class="hand-row" id="playerRow"></div>
+
+  <div class="odds-row">
+    <div class="odds-box" id="box-dealer" onclick="select('dealer')">
+      <div class="name">DEALER</div>
+      <div class="value" id="odds-dealer">--</div>
+    </div>
+    <div class="odds-box" id="box-push" onclick="select('push')">
+      <div class="name">PUSH</div>
+      <div class="value" id="odds-push">--</div>
+    </div>
+    <div class="odds-box" id="box-player" onclick="select('player')">
+      <div class="name">PLAYER</div>
+      <div class="value" id="odds-player">--</div>
+    </div>
+  </div>
+
+  <div class="position-row">
+    <div class="position-box" id="pos-dealer">£0</div>
+    <div class="position-box" id="pos-push">£0</div>
+    <div class="position-box" id="pos-player">£0</div>
+  </div>
+
+  <div class="bets-list" id="betsList"></div>
+
+  <div class="cashout-section" id="cashoutSection"></div>
+
+  <div class="result-banner" id="resultBanner"></div>
+
+  <div class="spacer"></div>
+
+  <div class="preset-row" id="presetRow"></div>
+
+  <div class="controls">
+    <input type="number" placeholder="Stake" id="stake">
+    <button id="backBtn" onclick="placeBet()">BET</button>
+  </div>
+
+  <div class="main-action-row">
+    <button id="mainBtn" onclick="onMainButtonPress()">DEAL</button>
+  </div>
+
+</div>
+
+<script>/* ============================================================
+   CORE — shared game backend, used by every visual skin.
+   Contains: the engine (cards, shoe, strategy, dealer play),
+   the odds tables and lookups, game state, and the game's flow
+   (deal -> peek -> play -> settle). Nothing in this file touches
+   the DOM directly.
+
+   CONTRACT: every skin must implement these functions, which
+   core calls by name whenever something needs to be shown:
+     renderCards(rowId, hand, hideSecond)
+     setOddsDisplay(odds)
+     setOddsSettled(isSettled)
+     renderBets()
+     renderPositions()
+     renderSession()
+     renderCashoutOptions()
+     showResult(outcome, amount) -- outcome may be null (clear banner)
+     setMainButton(label)
+     renderPresets()
+     highlightSelected(outcome) -- outcome may be null (clear all)
+     getCurrentMargin() -> number
+     getStakeInput() -> number
+     clearStakeInput()
+     setStakeInput(amount)
+   ============================================================ */
+
+/* ---------- Precomputed odds tables (generated from the Python
+   probability model in market_probability.py / dealer_probability.py) ---------- */
+
+const ODDS_TABLE = {"pre_deal": {"player": 0.431861, "dealer": 0.481589, "push": 0.08655}, "in_play": {"2_0_2": {"player": 0.432399, "dealer": 0.509256, "push": 0.058345}, "2_0_3": {"player": 0.446378, "dealer": 0.497088, "push": 0.056534}, "2_0_4": {"player": 0.470891, "dealer": 0.491864, "push": 0.037244}, "2_0_5": {"player": 0.488952, "dealer": 0.475076, "push": 0.035972}, "2_0_6": {"player": 0.506223, "dealer": 0.459959, "push": 0.033818}, "2_0_7": {"player": 0.43845, "dealer": 0.465707, "push": 0.095844}, "2_0_8": {"player": 0.398569, "dealer": 0.501731, "push": 0.099699}, "2_0_9": {"player": 0.354823, "dealer": 0.54487, "push": 0.100306}, "2_0_10": {"player": 0.32951, "dealer": 0.571508, "push": 0.098982}, "2_0_11": {"player": 0.326201, "dealer": 0.571283, "push": 0.102516}, "3_0_2": {"player": 0.428476, "dealer": 0.528013, "push": 0.043511}, "3_0_3": {"player": 0.444888, "dealer": 0.512952, "push": 0.04216}, "3_0_4": {"player": 0.465334, "dealer": 0.500147, "push": 0.03452}, "3_0_5": {"player": 0.483585, "dealer": 0.483075, "push": 0.03334}, "3_0_6": {"player": 0.501231, "dealer": 0.467406, "push": 0.031362}, "3_0_7": {"player": 0.424823, "dealer": 0.482261, "push": 0.092916}, "3_0_8": {"player": 0.386275, "dealer": 0.517217, "push": 0.096508}, "3_0_9": {"player": 0.343887, "dealer": 0.558964, "push": 0.097148}, "3_0_10": {"player": 0.319382, "dealer": 0.584711, "push": 0.095907}, "3_0_11": {"player": 0.316126, "dealer": 0.584519, "push": 0.099355}, "4_0_2": {"player": 0.423067, "dealer": 0.536589, "push": 0.040344}, "4_0_3": {"player": 0.439739, "dealer": 0.521169, "push": 0.039092}, "4_0_4": {"player": 0.460192, "dealer": 0.507814, "push": 0.031994}, "4_0_5": {"player": 0.478619, "dealer": 0.490481, "push": 0.0309}, "4_0_6": {"player": 0.496611, "dealer": 0.474304, "push": 0.029085}, "4_0_7": {"player": 0.410902, "dealer": 0.499182, "push": 0.089916}, "4_0_8": {"player": 0.373704, "dealer": 0.533038, "push": 0.093258}, "4_0_9": {"player": 0.332702, "dealer": 0.573368, "push": 0.09393}, "4_0_10": {"player": 0.309018, "dealer": 0.598216, "push": 0.092766}, "4_0_11": {"player": 0.305825, "dealer": 0.598053, "push": 0.096123}, "5_0_2": {"player": 0.41806, "dealer": 0.544534, "push": 0.037406}, "5_0_3": {"player": 0.434974, "dealer": 0.52878, "push": 0.036245}, "5_0_4": {"player": 0.455433, "dealer": 0.514915, "push": 0.029651}, "5_0_5": {"player": 0.474023, "dealer": 0.497339, "push": 0.028638}, "5_0_6": {"player": 0.492336, "dealer": 0.480692, "push": 0.026972}, "5_0_7": {"player": 0.396836, "dealer": 0.516283, "push": 0.086881}, "5_0_8": {"player": 0.360926, "dealer": 0.549019, "push": 0.090055}, "5_0_9": {"player": 0.321357, "dealer": 0.587973, "push": 0.09067}, "5_0_10": {"player": 0.298502, "dealer": 0.611914, "push": 0.089584}, "5_0_11": {"player": 0.295379, "dealer": 0.611779, "push": 0.092843}, "6_0_2": {"player": 0.413464, "dealer": 0.551836, "push": 0.0347}, "6_0_3": {"player": 0.430602, "dealer": 0.535775, "push": 0.033623}, "6_0_4": {"player": 0.451065, "dealer": 0.521438, "push": 0.027498}, "6_0_5": {"player": 0.469804, "dealer": 0.503639, "push": 0.026558}, "6_0_6": {"player": 0.488374, "dealer": 0.486615, "push": 0.025012}, "6_0_7": {"player": 0.382193, "dealer": 0.534125, "push": 0.083682}, "6_0_8": {"player": 0.348487, "dealer": 0.565729, "push": 0.085785}, "6_0_9": {"player": 0.309945, "dealer": 0.602586, "push": 0.087469}, "6_0_10": {"player": 0.287935, "dealer": 0.625684, "push": 0.086381}, "6_0_11": {"player": 0.284892, "dealer": 0.625541, "push": 0.089566}, "7_0_2": {"player": 0.408711, "dealer": 0.522165, "push": 0.069124}, "7_0_3": {"player": 0.426068, "dealer": 0.506887, "push": 0.067045}, "7_0_4": {"player": 0.446556, "dealer": 0.493219, "push": 0.060226}, "7_0_5": {"player": 0.465448, "dealer": 0.476345, "push": 0.058207}, "7_0_6": {"player": 0.48477, "dealer": 0.45921, "push": 0.05602}, "7_0_7": {"player": 0.379256, "dealer": 0.448064, "push": 0.17268}, "7_0_8": {"player": 0.335895, "dealer": 0.546499, "push": 0.117606}, "7_0_9": {"player": 0.306421, "dealer": 0.591786, "push": 0.101793}, "7_0_10": {"player": 0.289478, "dealer": 0.608533, "push": 0.101989}, "7_0_11": {"player": 0.278735, "dealer": 0.627923, "push": 0.093342}, "8_0_2": {"player": 0.448505, "dealer": 0.473012, "push": 0.078483}, "8_0_3": {"player": 0.464809, "dealer": 0.459241, "push": 0.07595}, "8_0_4": {"player": 0.483877, "dealer": 0.446867, "push": 0.069256}, "8_0_5": {"player": 0.501539, "dealer": 0.431588, "push": 0.066873}, "8_0_6": {"player": 0.513372, "dealer": 0.426636, "push": 0.059992}, "8_0_7": {"player": 0.482301, "dealer": 0.400093, "push": 0.117606}, "8_0_8": {"player": 0.384145, "dealer": 0.444043, "push": 0.171812}, "8_0_9": {"player": 0.336812, "dealer": 0.546998, "push": 0.116191}, "8_0_10": {"player": 0.323946, "dealer": 0.573321, "push": 0.102733}, "8_0_11": {"player": 0.301962, "dealer": 0.565439, "push": 0.132598}, "9_0_2": {"player": 0.495813, "dealer": 0.42358, "push": 0.080608}, "9_0_3": {"player": 0.51061, "dealer": 0.411336, "push": 0.078054}, "9_0_4": {"player": 0.527988, "dealer": 0.4004, "push": 0.071612}, "9_0_5": {"player": 0.544125, "dealer": 0.386764, "push": 0.069111}, "9_0_6": {"player": 0.560312, "dealer": 0.373009, "push": 0.066679}, "9_0_7": {"player": 0.534794, "dealer": 0.362926, "push": 0.10228}, "9_0_8": {"player": 0.491093, "dealer": 0.392717, "push": 0.116191}, "9_0_9": {"player": 0.388945, "dealer": 0.441123, "push": 0.169932}, "9_0_10": {"player": 0.36449, "dealer": 0.517443, "push": 0.118067}, "9_0_11": {"player": 0.36888, "dealer": 0.493134, "push": 0.137987}, "10_0_2": {"player": 0.549344, "dealer": 0.368368, "push": 0.082288}, "10_0_3": {"player": 0.562486, "dealer": 0.35777, "push": 0.079744}, "10_0_4": {"player": 0.578023, "dealer": 0.348401, "push": 0.073576}, "10_0_5": {"player": 0.592396, "dealer": 0.336546, "push": 0.071059}, "10_0_6": {"player": 0.606956, "dealer": 0.324475, "push": 0.068569}, "10_0_7": {"player": 0.578284, "dealer": 0.321375, "push": 0.100341}, "10_0_8": {"player": 0.548893, "dealer": 0.350939, "push": 0.100168}, "10_0_9": {"player": 0.501433, "dealer": 0.384903, "push": 0.113663}, "10_0_10": {"player": 0.42697, "dealer": 0.401661, "push": 0.171369}, "10_0_11": {"player": 0.448037, "dealer": 0.415163, "push": 0.1368}, "11_0_2": {"player": 0.578343, "dealer": 0.34076, "push": 0.080896}, "11_0_3": {"player": 0.590595, "dealer": 0.33096, "push": 0.078445}, "11_0_4": {"player": 0.60522, "dealer": 0.322416, "push": 0.072364}, "11_0_5": {"player": 0.618659, "dealer": 0.311414, "push": 0.069928}, "11_0_6": {"player": 0.632407, "dealer": 0.300075, "push": 0.067518}, "11_0_7": {"player": 0.596428, "dealer": 0.304281, "push": 0.09929}, "11_0_8": {"player": 0.564907, "dealer": 0.334925, "push": 0.100168}, "11_0_9": {"player": 0.529124, "dealer": 0.370867, "push": 0.100008}, "11_0_10": {"player": 0.512518, "dealer": 0.393036, "push": 0.094446}, "11_0_11": {"player": 0.495772, "dealer": 0.393069, "push": 0.111159}, "12_0_2": {"player": 0.348383, "dealer": 0.602134, "push": 0.049482}, "12_0_3": {"player": 0.359018, "dealer": 0.593034, "push": 0.047948}, "12_0_4": {"player": 0.397075, "dealer": 0.602925, "push": 0.0}, "12_0_5": {"player": 0.417659, "dealer": 0.582341, "push": 0.0}, "12_0_6": {"player": 0.439467, "dealer": 0.560533, "push": 0.0}, "12_0_7": {"player": 0.355414, "dealer": 0.568261, "push": 0.076325}, "12_0_8": {"player": 0.325141, "dealer": 0.596716, "push": 0.078143}, "12_0_9": {"player": 0.290078, "dealer": 0.630091, "push": 0.079831}, "12_0_10": {"player": 0.269633, "dealer": 0.650676, "push": 0.079691}, "12_0_11": {"player": 0.266589, "dealer": 0.650707, "push": 0.082704}, "12_1_2": {"player": 0.500852, "dealer": 0.426662, "push": 0.072486}, "12_1_3": {"player": 0.512904, "dealer": 0.416847, "push": 0.070249}, "12_1_4": {"player": 0.534767, "dealer": 0.413538, "push": 0.051694}, "12_1_5": {"player": 0.550632, "dealer": 0.399445, "push": 0.049923}, "12_1_6": {"player": 0.556236, "dealer": 0.400912, "push": 0.042853}, "12_1_7": {"player": 0.537453, "dealer": 0.37198, "push": 0.090568}, "12_1_8": {"player": 0.491295, "dealer": 0.39618, "push": 0.112525}, "12_1_9": {"player": 0.442456, "dealer": 0.44239, "push": 0.115154}, "12_1_10": {"player": 0.4076, "dealer": 0.477602, "push": 0.114798}, "12_1_11": {"player": 0.410495, "dealer": 0.473998, "push": 0.115507}, "13_0_2": {"player": 0.356728, "dealer": 0.643272, "push": 0.0}, "13_0_3": {"player": 0.376682, "dealer": 0.623318, "push": 0.0}, "13_0_4": {"player": 0.397075, "dealer": 0.602925, "push": 0.0}, "13_0_5": {"player": 0.417659, "dealer": 0.582341, "push": 0.0}, "13_0_6": {"player": 0.439467, "dealer": 0.560533, "push": 0.0}, "13_0_7": {"player": 0.330027, "dealer": 0.5991, "push": 0.070873}, "13_0_8": {"player": 0.301917, "dealer": 0.625522, "push": 0.072562}, "13_0_9": {"player": 0.269358, "dealer": 0.656513, "push": 0.074129}, "13_0_10": {"player": 0.250374, "dealer": 0.675628, "push": 0.073998}, "13_0_11": {"player": 0.247547, "dealer": 0.675657, "push": 0.076796}, "13_1_2": {"player": 0.492346, "dealer": 0.450949, "push": 0.056705}, "13_1_3": {"player": 0.506959, "dealer": 0.438084, "push": 0.054957}, "13_1_4": {"player": 0.524932, "dealer": 0.427066, "push": 0.048002}, "13_1_5": {"player": 0.541134, "dealer": 0.412509, "push": 0.046357}, "13_1_6": {"player": 0.547895, "dealer": 0.412313, "push": 0.039792}, "13_1_7": {"player": 0.517196, "dealer": 0.394811, "push": 0.087993}, "13_1_8": {"player": 0.472791, "dealer": 0.418734, "push": 0.108474}, "13_1_9": {"player": 0.425652, "dealer": 0.463347, "push": 0.111001}, "13_1_10": {"player": 0.392242, "dealer": 0.497094, "push": 0.110664}, "13_1_11": {"player": 0.394775, "dealer": 0.493749, "push": 0.111476}, "14_0_2": {"player": 0.356728, "dealer": 0.643272, "push": 0.0}, "14_0_3": {"player": 0.376682, "dealer": 0.623318, "push": 0.0}, "14_0_4": {"player": 0.397075, "dealer": 0.602925, "push": 0.0}, "14_0_5": {"player": 0.417659, "dealer": 0.582341, "push": 0.0}, "14_0_6": {"player": 0.439467, "dealer": 0.560533, "push": 0.0}, "14_0_7": {"player": 0.306454, "dealer": 0.627735, "push": 0.065811}, "14_0_8": {"player": 0.280351, "dealer": 0.65227, "push": 0.067379}, "14_0_9": {"player": 0.250118, "dealer": 0.681048, "push": 0.068834}, "14_0_10": {"player": 0.23249, "dealer": 0.698797, "push": 0.068713}, "14_0_11": {"player": 0.229865, "dealer": 0.698824, "push": 0.071311}, "14_1_2": {"player": 0.482659, "dealer": 0.464687, "push": 0.052654}, "14_1_3": {"player": 0.497654, "dealer": 0.451315, "push": 0.051031}, "14_1_4": {"player": 0.515799, "dealer": 0.439627, "push": 0.044573}, "14_1_5": {"player": 0.532314, "dealer": 0.42464, "push": 0.043046}, "14_1_6": {"player": 0.54015, "dealer": 0.4229, "push": 0.03695}, "14_1_7": {"player": 0.497092, "dealer": 0.417584, "push": 0.085324}, "14_1_8": {"player": 0.454424, "dealer": 0.441147, "push": 0.104428}, "14_1_9": {"player": 0.408991, "dealer": 0.484154, "push": 0.106855}, "14_1_10": {"player": 0.376999, "dealer": 0.516466, "push": 0.106535}, "14_1_11": {"player": 0.379207, "dealer": 0.513361, "push": 0.107432}, "15_0_2": {"player": 0.356728, "dealer": 0.643272, "push": 0.0}, "15_0_3": {"player": 0.376682, "dealer": 0.623318, "push": 0.0}, "15_0_4": {"player": 0.397075, "dealer": 0.602925, "push": 0.0}, "15_0_5": {"player": 0.417659, "dealer": 0.582341, "push": 0.0}, "15_0_6": {"player": 0.439467, "dealer": 0.560533, "push": 0.0}, "15_0_7": {"player": 0.284564, "dealer": 0.654326, "push": 0.06111}, "15_0_8": {"player": 0.260326, "dealer": 0.677108, "push": 0.062566}, "15_0_9": {"player": 0.232252, "dealer": 0.70383, "push": 0.063917}, "15_0_10": {"player": 0.215883, "dealer": 0.720312, "push": 0.063805}, "15_0_11": {"player": 0.213446, "dealer": 0.720336, "push": 0.066217}, "15_1_2": {"player": 0.473664, "dealer": 0.477443, "push": 0.048893}, "15_1_3": {"player": 0.489013, "dealer": 0.463601, "push": 0.047386}, "15_1_4": {"player": 0.507319, "dealer": 0.451291, "push": 0.041389}, "15_1_5": {"player": 0.524124, "dealer": 0.435904, "push": 0.039972}, "15_1_6": {"player": 0.532958, "dealer": 0.432731, "push": 0.03431}, "15_1_7": {"player": 0.477221, "dealer": 0.440192, "push": 0.082587}, "15_1_8": {"player": 0.436269, "dealer": 0.463324, "push": 0.100407}, "15_1_9": {"player": 0.392538, "dealer": 0.504727, "push": 0.102734}, "15_1_10": {"player": 0.361933, "dealer": 0.535637, "push": 0.102431}, "15_1_11": {"player": 0.363849, "dealer": 0.532755, "push": 0.103396}, "16_0_2": {"player": 0.356728, "dealer": 0.643272, "push": 0.0}, "16_0_3": {"player": 0.376682, "dealer": 0.623318, "push": 0.0}, "16_0_4": {"player": 0.397075, "dealer": 0.602925, "push": 0.0}, "16_0_5": {"player": 0.417659, "dealer": 0.582341, "push": 0.0}, "16_0_6": {"player": 0.439467, "dealer": 0.560533, "push": 0.0}, "16_0_7": {"player": 0.264238, "dealer": 0.679017, "push": 0.056745}, "16_0_8": {"player": 0.241731, "dealer": 0.700172, "push": 0.058097}, "16_0_9": {"player": 0.215663, "dealer": 0.724985, "push": 0.059352}, "16_0_10": {"player": 0.200463, "dealer": 0.74029, "push": 0.059247}, "16_0_11": {"player": 0.1982, "dealer": 0.740312, "push": 0.061487}, "16_1_2": {"player": 0.465311, "dealer": 0.489288, "push": 0.045401}, "16_1_3": {"player": 0.480989, "dealer": 0.475009, "push": 0.044002}, "16_1_4": {"player": 0.499445, "dealer": 0.462122, "push": 0.038433}, "16_1_5": {"player": 0.51652, "dealer": 0.446364, "push": 0.037116}, "16_1_6": {"player": 0.52628, "dealer": 0.44186, "push": 0.03186}, "16_1_7": {"player": 0.457652, "dealer": 0.462542, "push": 0.079806}, "16_1_8": {"player": 0.418389, "dealer": 0.485184, "push": 0.096427}, "16_1_9": {"player": 0.37635, "dealer": 0.524993, "push": 0.098657}, "16_1_10": {"player": 0.347095, "dealer": 0.554536, "push": 0.09837}, "16_1_11": {"player": 0.34875, "dealer": 0.551861, "push": 0.099389}, "17_0_2": {"player": 0.356728, "dealer": 0.513138, "push": 0.130134}, "17_0_3": {"player": 0.376682, "dealer": 0.49699, "push": 0.126328}, "17_0_4": {"player": 0.397075, "dealer": 0.480519, "push": 0.122406}, "17_0_5": {"player": 0.417659, "dealer": 0.463982, "push": 0.118359}, "17_0_6": {"player": 0.439467, "dealer": 0.445696, "push": 0.114838}, "17_0_7": {"player": 0.262312, "dealer": 0.369121, "push": 0.368566}, "17_0_8": {"player": 0.244741, "dealer": 0.626692, "push": 0.128567}, "17_0_9": {"player": 0.228425, "dealer": 0.651579, "push": 0.119995}, "17_0_10": {"player": 0.229785, "dealer": 0.649505, "push": 0.12071}, "17_0_11": {"player": 0.200663, "dealer": 0.716291, "push": 0.083046}, "17_1_2": {"player": 0.457555, "dealer": 0.463105, "push": 0.079339}, "17_1_3": {"player": 0.473539, "dealer": 0.449509, "push": 0.076952}, "17_1_4": {"player": 0.492132, "dealer": 0.437207, "push": 0.070661}, "17_1_5": {"player": 0.509458, "dealer": 0.42226, "push": 0.068282}, "17_1_6": {"player": 0.520079, "dealer": 0.417526, "push": 0.062395}, "17_1_7": {"player": 0.443287, "dealer": 0.389463, "push": 0.16725}, "17_1_8": {"player": 0.406631, "dealer": 0.479546, "push": 0.113823}, "17_1_9": {"player": 0.368518, "dealer": 0.518305, "push": 0.113176}, "17_1_10": {"player": 0.344999, "dealer": 0.541866, "push": 0.113136}, "17_1_11": {"player": 0.3387, "dealer": 0.558459, "push": 0.102842}, "18_0_2": {"player": 0.486862, "dealer": 0.376592, "push": 0.136546}, "18_0_3": {"player": 0.50301, "dealer": 0.365033, "push": 0.131957}, "18_0_4": {"player": 0.519481, "dealer": 0.353212, "push": 0.127307}, "18_0_5": {"player": 0.536018, "dealer": 0.341072, "push": 0.122911}, "18_0_6": {"player": 0.554304, "dealer": 0.330858, "push": 0.114838}, "18_0_7": {"player": 0.630879, "dealer": 0.231324, "push": 0.137797}, "18_0_8": {"player": 0.373308, "dealer": 0.267356, "push": 0.359336}, "18_0_9": {"player": 0.348421, "dealer": 0.531584, "push": 0.119995}, "18_0_10": {"player": 0.350495, "dealer": 0.528796, "push": 0.12071}, "18_0_11": {"player": 0.283709, "dealer": 0.509441, "push": 0.206851}, "18_1_2": {"player": 0.487534, "dealer": 0.427666, "push": 0.084799}, "18_1_3": {"player": 0.502714, "dealer": 0.415198, "push": 0.082087}, "18_1_4": {"player": 0.520316, "dealer": 0.403927, "push": 0.075757}, "18_1_5": {"player": 0.536718, "dealer": 0.390123, "push": 0.073159}, "18_1_6": {"player": 0.547132, "dealer": 0.386727, "push": 0.066141}, "18_1_7": {"player": 0.630879, "dealer": 0.231324, "push": 0.137797}, "18_1_8": {"player": 0.373308, "dealer": 0.267356, "push": 0.359336}, "18_1_9": {"player": 0.392796, "dealer": 0.49354, "push": 0.113663}, "18_1_10": {"player": 0.371258, "dealer": 0.515066, "push": 0.113677}, "18_1_11": {"player": 0.352567, "dealer": 0.510632, "push": 0.1368}, "19_0_2": {"player": 0.623408, "dealer": 0.245298, "push": 0.131294}, "19_0_3": {"player": 0.634967, "dealer": 0.237978, "push": 0.127055}, "19_0_4": {"player": 0.646788, "dealer": 0.230456, "push": 0.122756}, "19_0_5": {"player": 0.658928, "dealer": 0.222713, "push": 0.118359}, "19_0_6": {"player": 0.669142, "dealer": 0.21602, "push": 0.114838}, "19_0_7": {"player": 0.768676, "dealer": 0.152699, "push": 0.078625}, "19_0_8": {"player": 0.732644, "dealer": 0.13879, "push": 0.128567}, "19_0_9": {"player": 0.468416, "dealer": 0.180819, "push": 0.350765}, "19_0_10": {"player": 0.471204, "dealer": 0.408086, "push": 0.12071}, "19_0_11": {"player": 0.490559, "dealer": 0.30259, "push": 0.206851}, "19_1_2": {"player": 0.623408, "dealer": 0.245298, "push": 0.131294}, "19_1_3": {"player": 0.634967, "dealer": 0.237978, "push": 0.127055}, "19_1_4": {"player": 0.646788, "dealer": 0.230456, "push": 0.122756}, "19_1_5": {"player": 0.658928, "dealer": 0.222713, "push": 0.118359}, "19_1_6": {"player": 0.580455, "dealer": 0.349926, "push": 0.069619}, "19_1_7": {"player": 0.768676, "dealer": 0.152699, "push": 0.078625}, "19_1_8": {"player": 0.732644, "dealer": 0.13879, "push": 0.128567}, "19_1_9": {"player": 0.468416, "dealer": 0.180819, "push": 0.350765}, "19_1_10": {"player": 0.471204, "dealer": 0.408086, "push": 0.12071}, "19_1_11": {"player": 0.490559, "dealer": 0.30259, "push": 0.206851}, "20_0_2": {"player": 0.754702, "dealer": 0.119632, "push": 0.125665}, "20_0_3": {"player": 0.762022, "dealer": 0.116174, "push": 0.121803}, "20_0_4": {"player": 0.769544, "dealer": 0.112602, "push": 0.117854}, "20_0_5": {"player": 0.777287, "dealer": 0.108905, "push": 0.113807}, "20_0_6": {"player": 0.78398, "dealer": 0.105734, "push": 0.110286}, "20_0_7": {"player": 0.847301, "dealer": 0.074074, "push": 0.078625}, "20_0_8": {"player": 0.86121, "dealer": 0.069395, "push": 0.069395}, "20_0_9": {"player": 0.819181, "dealer": 0.060824, "push": 0.119995}, "20_0_10": {"player": 0.591914, "dealer": 0.037376, "push": 0.37071}, "20_0_11": {"player": 0.69741, "dealer": 0.09574, "push": 0.206851}, "20_1_2": {"player": 0.754702, "dealer": 0.119632, "push": 0.125665}, "20_1_3": {"player": 0.762022, "dealer": 0.116174, "push": 0.121803}, "20_1_4": {"player": 0.769544, "dealer": 0.112602, "push": 0.117854}, "20_1_5": {"player": 0.777287, "dealer": 0.108905, "push": 0.113807}, "20_1_6": {"player": 0.78398, "dealer": 0.105734, "push": 0.110286}, "20_1_7": {"player": 0.847301, "dealer": 0.074074, "push": 0.078625}, "20_1_8": {"player": 0.86121, "dealer": 0.069395, "push": 0.069395}, "20_1_9": {"player": 0.819181, "dealer": 0.060824, "push": 0.119995}, "20_1_10": {"player": 0.591914, "dealer": 0.037376, "push": 0.37071}, "20_1_11": {"player": 0.69741, "dealer": 0.09574, "push": 0.206851}, "21_0_2": {"player": 0.880368, "dealer": 0.0, "push": 0.119632}, "21_0_3": {"player": 0.883826, "dealer": 0.0, "push": 0.116174}, "21_0_4": {"player": 0.887398, "dealer": 0.0, "push": 0.112602}, "21_0_5": {"player": 0.891095, "dealer": 0.0, "push": 0.108905}, "21_0_6": {"player": 0.894266, "dealer": 0.0, "push": 0.105734}, "21_0_7": {"player": 0.925926, "dealer": 0.0, "push": 0.074074}, "21_0_8": {"player": 0.930605, "dealer": 0.0, "push": 0.069395}, "21_0_9": {"player": 0.939176, "dealer": 0.0, "push": 0.060824}, "21_0_10": {"player": 0.962624, "dealer": 0.0, "push": 0.037376}, "21_0_11": {"player": 0.90426, "dealer": 0.0, "push": 0.09574}, "21_1_2": {"player": 0.880368, "dealer": 0.0, "push": 0.119632}, "21_1_3": {"player": 0.883826, "dealer": 0.0, "push": 0.116174}, "21_1_4": {"player": 0.887398, "dealer": 0.0, "push": 0.112602}, "21_1_5": {"player": 0.891095, "dealer": 0.0, "push": 0.108905}, "21_1_6": {"player": 0.894266, "dealer": 0.0, "push": 0.105734}, "21_1_7": {"player": 0.925926, "dealer": 0.0, "push": 0.074074}, "21_1_8": {"player": 0.930605, "dealer": 0.0, "push": 0.069395}, "21_1_9": {"player": 0.939176, "dealer": 0.0, "push": 0.060824}, "21_1_10": {"player": 0.962624, "dealer": 0.0, "push": 0.037376}, "21_1_11": {"player": 0.90426, "dealer": 0.0, "push": 0.09574}}};
+const STARTING_ODDS_TABLE = {"4_0_2": {"player": 0.423067, "dealer": 0.536589, "push": 0.040344}, "4_0_3": {"player": 0.439739, "dealer": 0.521169, "push": 0.039092}, "4_0_4": {"player": 0.460192, "dealer": 0.507814, "push": 0.031994}, "4_0_5": {"player": 0.478619, "dealer": 0.490481, "push": 0.0309}, "4_0_6": {"player": 0.496611, "dealer": 0.474304, "push": 0.029085}, "4_0_7": {"player": 0.410902, "dealer": 0.499182, "push": 0.089916}, "4_0_8": {"player": 0.373704, "dealer": 0.533038, "push": 0.093258}, "4_0_9": {"player": 0.332702, "dealer": 0.573368, "push": 0.09393}, "4_0_10": {"player": 0.285248, "dealer": 0.629123, "push": 0.08563}, "4_0_11": {"player": 0.211725, "dealer": 0.721729, "push": 0.066546}, "5_0_2": {"player": 0.41806, "dealer": 0.544534, "push": 0.037406}, "5_0_3": {"player": 0.434974, "dealer": 0.52878, "push": 0.036245}, "5_0_4": {"player": 0.455433, "dealer": 0.514915, "push": 0.029651}, "5_0_5": {"player": 0.474023, "dealer": 0.497339, "push": 0.028638}, "5_0_6": {"player": 0.492336, "dealer": 0.480692, "push": 0.026972}, "5_0_7": {"player": 0.396836, "dealer": 0.516283, "push": 0.086881}, "5_0_8": {"player": 0.360926, "dealer": 0.549019, "push": 0.090055}, "5_0_9": {"player": 0.321357, "dealer": 0.587973, "push": 0.09067}, "5_0_10": {"player": 0.27554, "dealer": 0.641767, "push": 0.082693}, "5_0_11": {"player": 0.204493, "dealer": 0.731231, "push": 0.064276}, "6_0_2": {"player": 0.413464, "dealer": 0.551836, "push": 0.0347}, "6_0_3": {"player": 0.430602, "dealer": 0.535775, "push": 0.033623}, "6_0_4": {"player": 0.451065, "dealer": 0.521438, "push": 0.027498}, "6_0_5": {"player": 0.469804, "dealer": 0.503639, "push": 0.026558}, "6_0_6": {"player": 0.488374, "dealer": 0.486615, "push": 0.025012}, "6_0_7": {"player": 0.382193, "dealer": 0.534125, "push": 0.083682}, "6_0_8": {"player": 0.348487, "dealer": 0.565729, "push": 0.085785}, "6_0_9": {"player": 0.309945, "dealer": 0.602586, "push": 0.087469}, "6_0_10": {"player": 0.265786, "dealer": 0.654478, "push": 0.079736}, "6_0_11": {"player": 0.197233, "dealer": 0.740759, "push": 0.062008}, "7_0_2": {"player": 0.408711, "dealer": 0.522165, "push": 0.069124}, "7_0_3": {"player": 0.426068, "dealer": 0.506887, "push": 0.067045}, "7_0_4": {"player": 0.446556, "dealer": 0.493219, "push": 0.060226}, "7_0_5": {"player": 0.465448, "dealer": 0.476345, "push": 0.058207}, "7_0_6": {"player": 0.48477, "dealer": 0.45921, "push": 0.05602}, "7_0_7": {"player": 0.379256, "dealer": 0.448064, "push": 0.17268}, "7_0_8": {"player": 0.335895, "dealer": 0.546499, "push": 0.117606}, "7_0_9": {"player": 0.306421, "dealer": 0.591786, "push": 0.101793}, "7_0_10": {"player": 0.267211, "dealer": 0.638646, "push": 0.094143}, "7_0_11": {"player": 0.19297, "dealer": 0.742408, "push": 0.064621}, "8_0_2": {"player": 0.448505, "dealer": 0.473012, "push": 0.078483}, "8_0_3": {"player": 0.464809, "dealer": 0.459241, "push": 0.07595}, "8_0_4": {"player": 0.483877, "dealer": 0.446867, "push": 0.069256}, "8_0_5": {"player": 0.501539, "dealer": 0.431588, "push": 0.066873}, "8_0_6": {"player": 0.513372, "dealer": 0.426636, "push": 0.059992}, "8_0_7": {"player": 0.482301, "dealer": 0.400093, "push": 0.117606}, "8_0_8": {"player": 0.384145, "dealer": 0.444043, "push": 0.171812}, "8_0_9": {"player": 0.336812, "dealer": 0.546998, "push": 0.116191}, "8_0_10": {"player": 0.299027, "dealer": 0.606143, "push": 0.09483}, "8_0_11": {"player": 0.209051, "dealer": 0.69915, "push": 0.091799}, "9_0_2": {"player": 0.495813, "dealer": 0.42358, "push": 0.080608}, "9_0_3": {"player": 0.51061, "dealer": 0.411336, "push": 0.078054}, "9_0_4": {"player": 0.527988, "dealer": 0.4004, "push": 0.071612}, "9_0_5": {"player": 0.544125, "dealer": 0.386764, "push": 0.069111}, "9_0_6": {"player": 0.560312, "dealer": 0.373009, "push": 0.066679}, "9_0_7": {"player": 0.534794, "dealer": 0.362926, "push": 0.10228}, "9_0_8": {"player": 0.491093, "dealer": 0.392717, "push": 0.116191}, "9_0_9": {"player": 0.388945, "dealer": 0.441123, "push": 0.169932}, "9_0_10": {"player": 0.336452, "dealer": 0.554563, "push": 0.108985}, "9_0_11": {"player": 0.255378, "dealer": 0.649093, "push": 0.095529}, "10_0_2": {"player": 0.549344, "dealer": 0.368368, "push": 0.082288}, "10_0_3": {"player": 0.562486, "dealer": 0.35777, "push": 0.079744}, "10_0_4": {"player": 0.578023, "dealer": 0.348401, "push": 0.073576}, "10_0_5": {"player": 0.592396, "dealer": 0.336546, "push": 0.071059}, "10_0_6": {"player": 0.606956, "dealer": 0.324475, "push": 0.068569}, "10_0_7": {"player": 0.578284, "dealer": 0.321375, "push": 0.100341}, "10_0_8": {"player": 0.548893, "dealer": 0.350939, "push": 0.100168}, "10_0_9": {"player": 0.501433, "dealer": 0.384903, "push": 0.113663}, "10_0_10": {"player": 0.394126, "dealer": 0.447687, "push": 0.158187}, "10_0_11": {"player": 0.310179, "dealer": 0.595113, "push": 0.094708}, "11_0_2": {"player": 0.578343, "dealer": 0.34076, "push": 0.080896}, "11_0_3": {"player": 0.590595, "dealer": 0.33096, "push": 0.078445}, "11_0_4": {"player": 0.60522, "dealer": 0.322416, "push": 0.072364}, "11_0_5": {"player": 0.618659, "dealer": 0.311414, "push": 0.069928}, "11_0_6": {"player": 0.632407, "dealer": 0.300075, "push": 0.067518}, "11_0_7": {"player": 0.596428, "dealer": 0.304281, "push": 0.09929}, "11_0_8": {"player": 0.564907, "dealer": 0.334925, "push": 0.100168}, "11_0_9": {"player": 0.529124, "dealer": 0.370867, "push": 0.100008}, "11_0_10": {"player": 0.473094, "dealer": 0.439725, "push": 0.087181}, "11_0_11": {"player": 0.343226, "dealer": 0.579817, "push": 0.076956}, "12_0_2": {"player": 0.348383, "dealer": 0.602134, "push": 0.049482}, "12_0_3": {"player": 0.359018, "dealer": 0.593034, "push": 0.047948}, "12_0_4": {"player": 0.397075, "dealer": 0.602925, "push": 0.0}, "12_0_5": {"player": 0.417659, "dealer": 0.582341, "push": 0.0}, "12_0_6": {"player": 0.439467, "dealer": 0.560533, "push": 0.0}, "12_0_7": {"player": 0.355414, "dealer": 0.568261, "push": 0.076325}, "12_0_8": {"player": 0.325141, "dealer": 0.596716, "push": 0.078143}, "12_0_9": {"player": 0.290078, "dealer": 0.630091, "push": 0.079831}, "12_0_10": {"player": 0.248892, "dealer": 0.677547, "push": 0.073561}, "12_0_11": {"player": 0.184562, "dealer": 0.758182, "push": 0.057256}, "13_0_2": {"player": 0.356728, "dealer": 0.643272, "push": 0.0}, "13_0_3": {"player": 0.376682, "dealer": 0.623318, "push": 0.0}, "13_0_4": {"player": 0.397075, "dealer": 0.602925, "push": 0.0}, "13_0_5": {"player": 0.417659, "dealer": 0.582341, "push": 0.0}, "13_0_6": {"player": 0.439467, "dealer": 0.560533, "push": 0.0}, "13_0_7": {"player": 0.330027, "dealer": 0.5991, "push": 0.070873}, "13_0_8": {"player": 0.301917, "dealer": 0.625522, "push": 0.072562}, "13_0_9": {"player": 0.269358, "dealer": 0.656513, "push": 0.074129}, "13_0_10": {"player": 0.231114, "dealer": 0.70058, "push": 0.068306}, "13_0_11": {"player": 0.171379, "dealer": 0.775455, "push": 0.053167}, "14_0_2": {"player": 0.356728, "dealer": 0.643272, "push": 0.0}, "14_0_3": {"player": 0.376682, "dealer": 0.623318, "push": 0.0}, "14_0_4": {"player": 0.397075, "dealer": 0.602925, "push": 0.0}, "14_0_5": {"player": 0.417659, "dealer": 0.582341, "push": 0.0}, "14_0_6": {"player": 0.439467, "dealer": 0.560533, "push": 0.0}, "14_0_7": {"player": 0.306454, "dealer": 0.627735, "push": 0.065811}, "14_0_8": {"player": 0.280351, "dealer": 0.65227, "push": 0.067379}, "14_0_9": {"player": 0.250118, "dealer": 0.681048, "push": 0.068834}, "14_0_10": {"player": 0.214606, "dealer": 0.721967, "push": 0.063427}, "14_0_11": {"player": 0.159137, "dealer": 0.791493, "push": 0.049369}, "15_0_2": {"player": 0.356728, "dealer": 0.643272, "push": 0.0}, "15_0_3": {"player": 0.376682, "dealer": 0.623318, "push": 0.0}, "15_0_4": {"player": 0.397075, "dealer": 0.602925, "push": 0.0}, "15_0_5": {"player": 0.417659, "dealer": 0.582341, "push": 0.0}, "15_0_6": {"player": 0.439467, "dealer": 0.560533, "push": 0.0}, "15_0_7": {"player": 0.284564, "dealer": 0.654326, "push": 0.06111}, "15_0_8": {"player": 0.260326, "dealer": 0.677108, "push": 0.062566}, "15_0_9": {"player": 0.232252, "dealer": 0.70383, "push": 0.063917}, "15_0_10": {"player": 0.199277, "dealer": 0.741826, "push": 0.058897}, "15_0_11": {"player": 0.14777, "dealer": 0.806387, "push": 0.045843}, "16_0_2": {"player": 0.356728, "dealer": 0.643272, "push": 0.0}, "16_0_3": {"player": 0.376682, "dealer": 0.623318, "push": 0.0}, "16_0_4": {"player": 0.397075, "dealer": 0.602925, "push": 0.0}, "16_0_5": {"player": 0.417659, "dealer": 0.582341, "push": 0.0}, "16_0_6": {"player": 0.439467, "dealer": 0.560533, "push": 0.0}, "16_0_7": {"player": 0.264238, "dealer": 0.679017, "push": 0.056745}, "16_0_8": {"player": 0.241731, "dealer": 0.700172, "push": 0.058097}, "16_0_9": {"player": 0.215663, "dealer": 0.724985, "push": 0.059352}, "16_0_10": {"player": 0.185043, "dealer": 0.760267, "push": 0.05469}, "16_0_11": {"player": 0.137215, "dealer": 0.820216, "push": 0.042568}, "17_0_2": {"player": 0.356728, "dealer": 0.513138, "push": 0.130134}, "17_0_3": {"player": 0.376682, "dealer": 0.49699, "push": 0.126328}, "17_0_4": {"player": 0.397075, "dealer": 0.480519, "push": 0.122406}, "17_0_5": {"player": 0.417659, "dealer": 0.463982, "push": 0.118359}, "17_0_6": {"player": 0.439467, "dealer": 0.445696, "push": 0.114838}, "17_0_7": {"player": 0.262312, "dealer": 0.369121, "push": 0.368566}, "17_0_8": {"player": 0.244741, "dealer": 0.626692, "push": 0.128567}, "17_0_9": {"player": 0.228425, "dealer": 0.651579, "push": 0.119995}, "17_0_10": {"player": 0.212109, "dealer": 0.676467, "push": 0.111424}, "17_0_11": {"player": 0.13892, "dealer": 0.803586, "push": 0.057493}, "18_0_2": {"player": 0.486862, "dealer": 0.376592, "push": 0.136546}, "18_0_3": {"player": 0.50301, "dealer": 0.365033, "push": 0.131957}, "18_0_4": {"player": 0.519481, "dealer": 0.353212, "push": 0.127307}, "18_0_5": {"player": 0.536018, "dealer": 0.341072, "push": 0.122911}, "18_0_6": {"player": 0.554304, "dealer": 0.330858, "push": 0.114838}, "18_0_7": {"player": 0.630879, "dealer": 0.231324, "push": 0.137797}, "18_0_8": {"player": 0.373308, "dealer": 0.267356, "push": 0.359336}, "18_0_9": {"player": 0.348421, "dealer": 0.531584, "push": 0.119995}, "18_0_10": {"player": 0.323533, "dealer": 0.565042, "push": 0.111424}, "18_0_11": {"player": 0.196414, "dealer": 0.660382, "push": 0.143204}, "19_0_2": {"player": 0.623408, "dealer": 0.245298, "push": 0.131294}, "19_0_3": {"player": 0.634967, "dealer": 0.237978, "push": 0.127055}, "19_0_4": {"player": 0.646788, "dealer": 0.230456, "push": 0.122756}, "19_0_5": {"player": 0.658928, "dealer": 0.222713, "push": 0.118359}, "19_0_6": {"player": 0.669142, "dealer": 0.21602, "push": 0.114838}, "19_0_7": {"player": 0.768676, "dealer": 0.152699, "push": 0.078625}, "19_0_8": {"player": 0.732644, "dealer": 0.13879, "push": 0.128567}, "19_0_9": {"player": 0.468416, "dealer": 0.180819, "push": 0.350765}, "19_0_10": {"player": 0.434958, "dealer": 0.453618, "push": 0.111424}, "19_0_11": {"player": 0.339618, "dealer": 0.517178, "push": 0.143204}, "20_0_2": {"player": 0.754702, "dealer": 0.119632, "push": 0.125665}, "20_0_3": {"player": 0.762022, "dealer": 0.116174, "push": 0.121803}, "20_0_4": {"player": 0.769544, "dealer": 0.112602, "push": 0.117854}, "20_0_5": {"player": 0.777287, "dealer": 0.108905, "push": 0.113807}, "20_0_6": {"player": 0.78398, "dealer": 0.105734, "push": 0.110286}, "20_0_7": {"player": 0.847301, "dealer": 0.074074, "push": 0.078625}, "20_0_8": {"player": 0.86121, "dealer": 0.069395, "push": 0.069395}, "20_0_9": {"player": 0.819181, "dealer": 0.060824, "push": 0.119995}, "20_0_10": {"player": 0.546382, "dealer": 0.111424, "push": 0.342194}, "20_0_11": {"player": 0.482822, "dealer": 0.373974, "push": 0.143204}, "12_1_2": {"player": 0.500852, "dealer": 0.426662, "push": 0.072486}, "12_1_3": {"player": 0.512904, "dealer": 0.416847, "push": 0.070249}, "12_1_4": {"player": 0.534767, "dealer": 0.413538, "push": 0.051694}, "12_1_5": {"player": 0.550632, "dealer": 0.399445, "push": 0.049923}, "12_1_6": {"player": 0.556236, "dealer": 0.400912, "push": 0.042853}, "12_1_7": {"player": 0.537453, "dealer": 0.37198, "push": 0.090568}, "12_1_8": {"player": 0.491295, "dealer": 0.39618, "push": 0.112525}, "12_1_9": {"player": 0.442456, "dealer": 0.44239, "push": 0.115154}, "12_1_10": {"player": 0.376246, "dealer": 0.517787, "push": 0.105967}, "12_1_11": {"player": 0.284189, "dealer": 0.635845, "push": 0.079966}, "13_1_2": {"player": 0.492346, "dealer": 0.450949, "push": 0.056705}, "13_1_3": {"player": 0.506959, "dealer": 0.438084, "push": 0.054957}, "13_1_4": {"player": 0.524932, "dealer": 0.427066, "push": 0.048002}, "13_1_5": {"player": 0.541134, "dealer": 0.412509, "push": 0.046357}, "13_1_6": {"player": 0.547895, "dealer": 0.412313, "push": 0.039792}, "13_1_7": {"player": 0.517196, "dealer": 0.394811, "push": 0.087993}, "13_1_8": {"player": 0.472791, "dealer": 0.418734, "push": 0.108474}, "13_1_9": {"player": 0.425652, "dealer": 0.463347, "push": 0.111001}, "13_1_10": {"player": 0.36207, "dealer": 0.535779, "push": 0.102151}, "13_1_11": {"player": 0.273306, "dealer": 0.649518, "push": 0.077176}, "14_1_2": {"player": 0.482659, "dealer": 0.464687, "push": 0.052654}, "14_1_3": {"player": 0.497654, "dealer": 0.451315, "push": 0.051031}, "14_1_4": {"player": 0.515799, "dealer": 0.439627, "push": 0.044573}, "14_1_5": {"player": 0.532314, "dealer": 0.42464, "push": 0.043046}, "14_1_6": {"player": 0.54015, "dealer": 0.4229, "push": 0.03695}, "14_1_7": {"player": 0.497092, "dealer": 0.417584, "push": 0.085324}, "14_1_8": {"player": 0.454424, "dealer": 0.441147, "push": 0.104428}, "14_1_9": {"player": 0.408991, "dealer": 0.484154, "push": 0.106855}, "14_1_10": {"player": 0.347999, "dealer": 0.553661, "push": 0.09834}, "14_1_11": {"player": 0.262528, "dealer": 0.663096, "push": 0.074376}, "15_1_2": {"player": 0.473664, "dealer": 0.477443, "push": 0.048893}, "15_1_3": {"player": 0.489013, "dealer": 0.463601, "push": 0.047386}, "15_1_4": {"player": 0.507319, "dealer": 0.451291, "push": 0.041389}, "15_1_5": {"player": 0.524124, "dealer": 0.435904, "push": 0.039972}, "15_1_6": {"player": 0.532958, "dealer": 0.432731, "push": 0.03431}, "15_1_7": {"player": 0.477221, "dealer": 0.440192, "push": 0.082587}, "15_1_8": {"player": 0.436269, "dealer": 0.463324, "push": 0.100407}, "15_1_9": {"player": 0.392538, "dealer": 0.504727, "push": 0.102734}, "15_1_10": {"player": 0.334092, "dealer": 0.571357, "push": 0.094551}, "15_1_11": {"player": 0.251895, "dealer": 0.676523, "push": 0.071582}, "16_1_2": {"player": 0.465311, "dealer": 0.489288, "push": 0.045401}, "16_1_3": {"player": 0.480989, "dealer": 0.475009, "push": 0.044002}, "16_1_4": {"player": 0.499445, "dealer": 0.462122, "push": 0.038433}, "16_1_5": {"player": 0.51652, "dealer": 0.446364, "push": 0.037116}, "16_1_6": {"player": 0.52628, "dealer": 0.44186, "push": 0.03186}, "16_1_7": {"player": 0.457652, "dealer": 0.462542, "push": 0.079806}, "16_1_8": {"player": 0.418389, "dealer": 0.485184, "push": 0.096427}, "16_1_9": {"player": 0.37635, "dealer": 0.524993, "push": 0.098657}, "16_1_10": {"player": 0.320395, "dealer": 0.588802, "push": 0.090803}, "16_1_11": {"player": 0.241442, "dealer": 0.68975, "push": 0.068808}, "17_1_2": {"player": 0.457555, "dealer": 0.463105, "push": 0.079339}, "17_1_3": {"player": 0.473539, "dealer": 0.449509, "push": 0.076952}, "17_1_4": {"player": 0.492132, "dealer": 0.437207, "push": 0.070661}, "17_1_5": {"player": 0.509458, "dealer": 0.42226, "push": 0.068282}, "17_1_6": {"player": 0.520079, "dealer": 0.417526, "push": 0.062395}, "17_1_7": {"player": 0.443287, "dealer": 0.389463, "push": 0.16725}, "17_1_8": {"player": 0.406631, "dealer": 0.479546, "push": 0.113823}, "17_1_9": {"player": 0.368518, "dealer": 0.518305, "push": 0.113176}, "17_1_10": {"player": 0.31846, "dealer": 0.577107, "push": 0.104433}, "17_1_11": {"player": 0.234484, "dealer": 0.694318, "push": 0.071198}, "18_1_2": {"player": 0.487534, "dealer": 0.427666, "push": 0.084799}, "18_1_3": {"player": 0.502714, "dealer": 0.415198, "push": 0.082087}, "18_1_4": {"player": 0.520316, "dealer": 0.403927, "push": 0.075757}, "18_1_5": {"player": 0.536718, "dealer": 0.390123, "push": 0.073159}, "18_1_6": {"player": 0.547132, "dealer": 0.386727, "push": 0.066141}, "18_1_7": {"player": 0.630879, "dealer": 0.231324, "push": 0.137797}, "18_1_8": {"player": 0.373308, "dealer": 0.267356, "push": 0.359336}, "18_1_9": {"player": 0.392796, "dealer": 0.49354, "push": 0.113663}, "18_1_10": {"player": 0.342699, "dealer": 0.552368, "push": 0.104932}, "18_1_11": {"player": 0.244085, "dealer": 0.661207, "push": 0.094708}, "19_1_2": {"player": 0.623408, "dealer": 0.245298, "push": 0.131294}, "19_1_3": {"player": 0.634967, "dealer": 0.237978, "push": 0.127055}, "19_1_4": {"player": 0.646788, "dealer": 0.230456, "push": 0.122756}, "19_1_5": {"player": 0.658928, "dealer": 0.222713, "push": 0.118359}, "19_1_6": {"player": 0.580455, "dealer": 0.349926, "push": 0.069619}, "19_1_7": {"player": 0.768676, "dealer": 0.152699, "push": 0.078625}, "19_1_8": {"player": 0.732644, "dealer": 0.13879, "push": 0.128567}, "19_1_9": {"player": 0.468416, "dealer": 0.180819, "push": 0.350765}, "19_1_10": {"player": 0.434958, "dealer": 0.453618, "push": 0.111424}, "19_1_11": {"player": 0.339618, "dealer": 0.517178, "push": 0.143204}, "20_1_2": {"player": 0.754702, "dealer": 0.119632, "push": 0.125665}, "20_1_3": {"player": 0.762022, "dealer": 0.116174, "push": 0.121803}, "20_1_4": {"player": 0.769544, "dealer": 0.112602, "push": 0.117854}, "20_1_5": {"player": 0.777287, "dealer": 0.108905, "push": 0.113807}, "20_1_6": {"player": 0.78398, "dealer": 0.105734, "push": 0.110286}, "20_1_7": {"player": 0.847301, "dealer": 0.074074, "push": 0.078625}, "20_1_8": {"player": 0.86121, "dealer": 0.069395, "push": 0.069395}, "20_1_9": {"player": 0.819181, "dealer": 0.060824, "push": 0.119995}, "20_1_10": {"player": 0.546382, "dealer": 0.111424, "push": 0.342194}, "20_1_11": {"player": 0.482822, "dealer": 0.373974, "push": 0.143204}, "21_1_2": {"player": 1.0, "dealer": 0.0, "push": 0.0}, "21_1_3": {"player": 1.0, "dealer": 0.0, "push": 0.0}, "21_1_4": {"player": 1.0, "dealer": 0.0, "push": 0.0}, "21_1_5": {"player": 1.0, "dealer": 0.0, "push": 0.0}, "21_1_6": {"player": 1.0, "dealer": 0.0, "push": 0.0}, "21_1_7": {"player": 1.0, "dealer": 0.0, "push": 0.0}, "21_1_8": {"player": 1.0, "dealer": 0.0, "push": 0.0}, "21_1_9": {"player": 1.0, "dealer": 0.0, "push": 0.0}, "21_1_10": {"player": 0.923077, "dealer": 0.0, "push": 0.076923}, "21_1_11": {"player": 0.692308, "dealer": 0.0, "push": 0.307692}};
+const DEALER_PHASE_TABLE = {"4_0": {"18": 0.127307, "19": 0.122756, "20": 0.117854, "21": 0.112602, "bust": 0.397075, "17": 0.122406}, "5_0": {"17": 0.118359, "18": 0.122911, "19": 0.118359, "20": 0.113807, "21": 0.108905, "bust": 0.417659}, "6_0": {"18": 0.114838, "19": 0.114838, "20": 0.110286, "21": 0.105734, "bust": 0.439467, "17": 0.114838}, "7_0": {"17": 0.368566, "18": 0.137797, "19": 0.078625, "20": 0.078625, "21": 0.074074, "bust": 0.262312}, "8_0": {"18": 0.359336, "19": 0.128567, "20": 0.069395, "21": 0.069395, "bust": 0.244741, "17": 0.128567}, "9_0": {"17": 0.119995, "18": 0.119995, "19": 0.350765, "20": 0.119995, "21": 0.060824, "bust": 0.228425}, "10_0": {"18": 0.111424, "19": 0.111424, "20": 0.342194, "21": 0.111424, "bust": 0.212109, "17": 0.111424}, "11_0": {"17": 0.111424, "18": 0.111424, "19": 0.111424, "20": 0.111424, "21": 0.342194, "bust": 0.212109}, "12_0": {"18": 0.103465, "19": 0.103465, "20": 0.103465, "21": 0.103465, "bust": 0.482673, "17": 0.103465}, "12_1": {"18": 0.162537, "19": 0.162537, "20": 0.162537, "21": 0.162537, "bust": 0.266904, "17": 0.082948}, "13_0": {"17": 0.096075, "18": 0.096075, "19": 0.096075, "20": 0.096075, "21": 0.096075, "bust": 0.519625}, "13_1": {"19": 0.156206, "20": 0.156206, "21": 0.156206, "18": 0.156206, "bust": 0.292874, "17": 0.082302}, "14_0": {"18": 0.089213, "19": 0.089213, "20": 0.089213, "21": 0.089213, "bust": 0.553937, "17": 0.089213}, "14_1": {"18": 0.14995, "19": 0.14995, "20": 0.14995, "21": 0.14995, "bust": 0.318874, "17": 0.081325}, "15_0": {"17": 0.08284, "18": 0.08284, "19": 0.08284, "20": 0.08284, "21": 0.08284, "bust": 0.585799}, "15_1": {"19": 0.143791, "20": 0.143791, "21": 0.143791, "18": 0.143791, "bust": 0.344767, "17": 0.080068}, "16_0": {"18": 0.076923, "19": 0.076923, "20": 0.076923, "21": 0.076923, "bust": 0.615385, "17": 0.076923}, "16_1": {"18": 0.137747, "19": 0.137747, "20": 0.137747, "21": 0.137747, "bust": 0.370437, "17": 0.078575}, "17_0": {"17": 1.0}, "17_1": {"19": 0.111424, "20": 0.111424, "21": 0.111424, "18": 0.111424, "bust": 0.212109, "17": 0.342194}, "18_0": {"18": 1.0}, "18_1": {"18": 1.0}, "19_0": {"19": 1.0}, "19_1": {"19": 1.0}, "20_0": {"20": 1.0}, "20_1": {"20": 1.0}, "21_0": {"21": 1.0}, "21_1": {"21": 1.0}};
+
+/* ---------- Engine: direct port of main.py ---------- */
+
+const SUITS = ['S', 'H', 'D', 'C'];
+const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+const TEN_VALUE_RANKS = new Set(['10', 'J', 'Q', 'K']);
+
+class Card {
+  constructor(rank, suit) { this.rank = rank; this.suit = suit; }
+  value() {
+    if (TEN_VALUE_RANKS.has(this.rank)) return 10;
+    if (this.rank === 'A') return 11;
+    return parseInt(this.rank, 10);
+  }
+}
+
+class Shoe {
+  constructor(decks = 8) {
+    this.cards = [];
+    for (let d = 0; d < decks; d++) {
+      for (const suit of SUITS) {
+        for (const rank of RANKS) {
+          this.cards.push(new Card(rank, suit));
+        }
+      }
+    }
+    for (let i = this.cards.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+    }
+  }
+  deal() {
+    if (this.cards.length === 0) throw new Error('The shoe is empty.');
+    return this.cards.pop();
+  }
+}
+
+class Hand {
+  constructor(cards = []) { this.cards = cards; }
+  add(card) { this.cards.push(card); }
+  totalAndSoft() {
+    let total = this.cards.reduce((sum, c) => sum + c.value(), 0);
+    let aces = this.cards.filter(c => c.rank === 'A').length;
+    while (total > 21 && aces > 0) { total -= 10; aces -= 1; }
+    return [total, aces > 0];
+  }
+  total() { return this.totalAndSoft()[0]; }
+  soft() { return this.totalAndSoft()[1]; }
+  bust() { return this.total() > 21; }
+  blackjack() { return this.cards.length === 2 && this.total() === 21; }
+}
+
+function basicStrategy(total, soft, dealerValue) {
+  if (soft) {
+    if (total >= 20) return 'STAND';
+    if (total === 19) return dealerValue === 6 ? 'HIT' : 'STAND';
+    if (total === 18) return [7, 8].includes(dealerValue) ? 'STAND' : 'HIT';
+    return 'HIT';
+  }
+  if (total >= 17) return 'STAND';
+  if (total >= 13 && total <= 16) return [2, 3, 4, 5, 6].includes(dealerValue) ? 'STAND' : 'HIT';
+  if (total === 12) return [4, 5, 6].includes(dealerValue) ? 'STAND' : 'HIT';
+  return 'HIT';
+}
+
+function upcardRequiresPeek(upCard) {
+  return upCard.rank === 'A' || upCard.value() === 10;
+}
+
+function dealerHasBlackjack(dealerHand) {
+  const [upCard, holeCard] = dealerHand.cards;
+  if (upCard.rank === 'A') return holeCard.value() === 10;
+  if (upCard.value() === 10) return holeCard.rank === 'A';
+  return false;
+}
+
+function dealerShouldHit(total, soft) {
+  return total < 17 || (total === 17 && soft);
+}
+
+function settle(playerHand, dealerHand) {
+  if (playerHand.bust()) return 'dealer';
+  if (dealerHand.bust()) return 'player';
+  const pt = playerHand.total(), dt = dealerHand.total();
+  if (pt > dt) return 'player';
+  if (dt > pt) return 'dealer';
+  return 'push';
+}
+
+/* ---------- Odds lookup ---------- */
+
+function oddsFromProbability(p, margin) {
+  if (!p || p <= 0) return null;
+  return (1 / p) * (1 - margin);
+}
+
+function preDealOdds() {
+  const margin = getCurrentMargin();
+  const p = ODDS_TABLE.pre_deal;
+  return {
+    player: oddsFromProbability(p.player, margin),
+    dealer: oddsFromProbability(p.dealer, margin),
+    push: oddsFromProbability(p.push, margin),
+  };
+}
+
+function playerPhaseOdds(total, soft, dealerUpValue) {
+  const key = `${total}_${soft ? 1 : 0}_${dealerUpValue}`;
+  const entry = ODDS_TABLE.in_play[key];
+  if (!entry) return null;
+  const margin = getCurrentMargin();
+  return {
+    player: oddsFromProbability(entry.player, margin),
+    dealer: oddsFromProbability(entry.dealer, margin),
+    push: oddsFromProbability(entry.push, margin),
+  };
+}
+
+function startingHandOdds(total, soft, dealerUpValue) {
+  const key = `${total}_${soft ? 1 : 0}_${dealerUpValue}`;
+  const entry = STARTING_ODDS_TABLE[key];
+  if (!entry) return null;
+  const margin = getCurrentMargin();
+  return {
+    player: oddsFromProbability(entry.player, margin),
+    dealer: oddsFromProbability(entry.dealer, margin),
+    push: oddsFromProbability(entry.push, margin),
+  };
+}
+
+function dealerPhaseOdds(dealerTotal, dealerSoft, fixedPlayerTotal) {
+  const key = `${dealerTotal}_${dealerSoft ? 1 : 0}`;
+  const dist = DEALER_PHASE_TABLE[key];
+  if (!dist) return null;
+
+  let playerP = 0, dealerP = 0, pushP = 0;
+  for (const [outcome, p] of Object.entries(dist)) {
+    if (outcome === 'bust') {
+      playerP += p;
+    } else {
+      const dealerFinal = parseInt(outcome, 10);
+      if (dealerFinal > fixedPlayerTotal) dealerP += p;
+      else if (dealerFinal < fixedPlayerTotal) playerP += p;
+      else pushP += p;
+    }
+  }
+
+  const margin = getCurrentMargin();
+  return {
+    player: oddsFromProbability(playerP, margin),
+    dealer: oddsFromProbability(dealerP, margin),
+    push: oddsFromProbability(pushP, margin),
+  };
+}
+
+/* ---------- Game state ---------- */
+
+let selected = null;
+let currentOdds = { dealer: null, push: null, player: null };
+let bets = [];
+let sessionStaked = 0;
+let sessionReturned = 0;
+let presetStakes = [10, 25, 50, 100];
+
+// phase: 'pre_deal' | 'awaiting_peek' | 'player_turn' | 'dealer_turn' | 'settled'
+let phase = 'pre_deal';
+let shoe, player, dealer, dealerUp;
+
+/* ---------- Pure calculations ---------- */
+
+function positionFor(outcome) {
+  return bets.reduce((total, b) => {
+    if (b.outcome === outcome) return total + b.stake * (b.odds - 1);
+    return total - b.stake;
+  }, 0);
+}
+
+function cashoutValueFor(outcome) {
+  const matching = bets.filter(b => b.outcome === outcome);
+  if (matching.length === 0) return null;
+  const current = currentOdds[outcome];
+  if (!current) return null;
+  return matching.reduce((total, b) => total + (b.stake * b.odds / current), 0);
+}
+
+/* ---------- Actions (call into skin render functions) ---------- */
+
+function select(outcome) {
+  if (phase === 'settled' || !currentOdds[outcome]) return;
+  selected = outcome;
+  highlightSelected(outcome);
+}
+
+function placeBet() {
+  if (phase === 'settled') {
+    alert('Start a new game to place another bet.');
+    return;
+  }
+  const stake = getStakeInput();
+  if (!selected || !stake || stake <= 0) {
+    alert('Pick an outcome and enter a stake first.');
+    return;
+  }
+  if (!currentOdds[selected]) {
+    alert('No odds available for that outcome right now.');
+    return;
+  }
+  bets.push({ stake, outcome: selected, odds: currentOdds[selected] });
+  sessionStaked += stake;
+  clearStakeInput();
+  selected = null;
+  highlightSelected(null);
+  renderBets();
+  renderPositions();
+  renderSession();
+  renderCashoutOptions();
+}
+
+function fillStake(amount) {
+  setStakeInput(amount);
+}
+
+function editPresets() {
+  const input = prompt('Enter 4 preset amounts, comma separated:', presetStakes.join(','));
+  if (!input) return;
+  const parsed = input.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n > 0);
+  if (parsed.length !== 4) {
+    alert('Please enter exactly 4 numbers, e.g. 10,25,50,100');
+    return;
+  }
+  presetStakes = parsed;
+  renderPresets();
+}
+
+function confirmCashout(outcome) {
+  const value = cashoutValueFor(outcome);
+  if (value === null) return;
+  sessionReturned += value;
+  bets = bets.filter(b => b.outcome !== outcome);
+  renderSession();
+  renderBets();
+  renderPositions();
+  renderCashoutOptions();
+}
+
+function declineCashout() {
+  // No action -- the position stays open and keeps updating live.
+}
+
+function onMainButtonPress() {
+  if (phase === 'pre_deal') {
+    startDeal();
+  } else if (phase === 'awaiting_peek') {
+    checkDealerBlackjack();
+  } else if (phase === 'player_turn') {
+    playerNextCard();
+  } else if (phase === 'dealer_turn') {
+    dealerNextCard();
+  } else if (phase === 'settled') {
+    newGame();
+  }
+}
+
+function newGame() {
+  phase = 'pre_deal';
+  bets = [];
+  selected = null;
+  showResult(null, undefined);
+  renderCards('playerRow', new Hand(), false);
+  renderCards('dealerRow', new Hand(), false);
+  highlightSelected(null);
+  renderCashoutOptions();
+  setOddsSettled(false);
+  renderBets();
+  renderPositions();
+  setOddsDisplay(preDealOdds());
+  setMainButton('Deal');
+}
+
+function endHand(outcome) {
+  phase = 'settled';
+
+  const handResult = positionFor(outcome);
+
+  bets.forEach(b => {
+    if (b.outcome === outcome) {
+      sessionReturned += b.stake * b.odds;
+    }
+  });
+  renderSession();
+
+  showResult(outcome, bets.length > 0 ? handResult : undefined);
+
+  setOddsDisplay({ dealer: null, push: null, player: null });
+  setOddsSettled(true);
+  renderCashoutOptions();
+  setMainButton('New game');
+}
+
+function startDeal() {
+  shoe = new Shoe(8);
+  player = new Hand();
+  dealer = new Hand();
+
+  player.add(shoe.deal());
+  dealer.add(shoe.deal());
+  player.add(shoe.deal());
+  dealer.add(shoe.deal());
+
+  dealerUp = dealer.cards[0];
+  renderCards('playerRow', player, false);
+  renderCards('dealerRow', dealer, true);
+
+  const requiresPeek = upcardRequiresPeek(dealerUp);
+  phase = requiresPeek ? 'awaiting_peek' : 'player_turn';
+
+  if (!player.blackjack()) {
+    const [pTotal, pSoft] = player.totalAndSoft();
+    const odds = requiresPeek
+      ? startingHandOdds(pTotal, pSoft, dealerUp.value())
+      : playerPhaseOdds(pTotal, pSoft, dealerUp.value());
+    setOddsDisplay(odds);
+  }
+
+  if (requiresPeek) {
+    setMainButton('Check for dealer blackjack');
+    return;
+  }
+
+  proceedAfterPeek();
+}
+
+function checkDealerBlackjack() {
+  if (dealerHasBlackjack(dealer)) {
+    renderCards('dealerRow', dealer, false);
+    endHand(player.blackjack() ? 'push' : 'dealer');
+    return;
+  }
+  proceedAfterPeek();
+}
+
+function proceedAfterPeek() {
+  if (player.blackjack()) {
+    renderCards('dealerRow', dealer, false);
+    endHand('player');
+    return;
+  }
+
+  phase = 'player_turn';
+  const [pTotal, pSoft] = player.totalAndSoft();
+  setOddsDisplay(playerPhaseOdds(pTotal, pSoft, dealerUp.value()));
+  setMainButton('Next card');
+}
+
+function playerNextCard() {
+  const [total, soft] = player.totalAndSoft();
+  const action = basicStrategy(total, soft, dealerUp.value());
+
+  if (action === 'HIT') {
+    player.add(shoe.deal());
+    renderCards('playerRow', player, false);
+    if (player.bust()) {
+      renderCards('dealerRow', dealer, false);
+      endHand('dealer');
+      return;
+    }
+    const [newTotal, newSoft] = player.totalAndSoft();
+    setOddsDisplay(playerPhaseOdds(newTotal, newSoft, dealerUp.value()));
+    return;
+  }
+
+  renderCards('dealerRow', dealer, false);
+  const [dTotal, dSoft] = dealer.totalAndSoft();
+  const [playerFinalTotal] = player.totalAndSoft();
+
+  if (!dealerShouldHit(dTotal, dSoft)) {
+    endHand(settle(player, dealer));
+    return;
+  }
+
+  setOddsDisplay(dealerPhaseOdds(dTotal, dSoft, playerFinalTotal));
+  phase = 'dealer_turn';
+  setMainButton('Next card');
+}
+
+function dealerNextCard() {
+  dealer.add(shoe.deal());
+  renderCards('dealerRow', dealer, false);
+
+  const [playerFinalTotal] = player.totalAndSoft();
+  const [dTotal, dSoft] = dealer.totalAndSoft();
+
+  if (dealer.bust()) {
+    endHand('player');
+    return;
+  }
+
+  if (!dealerShouldHit(dTotal, dSoft)) {
+    endHand(settle(player, dealer));
+    return;
+  }
+
+  setOddsDisplay(dealerPhaseOdds(dTotal, dSoft, playerFinalTotal));
+}
+
+function onMarginChange() {
+  if (phase === 'pre_deal') {
+    setOddsDisplay(preDealOdds());
+  }
+}
+
+function initScreen() {
+  setOddsDisplay(preDealOdds());
+  renderSession();
+  renderPresets();
+}
+</script>
+<script>
+/* ============================================================
+   SKIN — futuristic/digital design. Same structure and card
+   convention as skin-dark.html (rank over suit, white suits,
+   corner score badge), but with a cyan accent instead of white,
+   cards animating in individually when dealt, and odds boxes
+   pulsing when their value actually changes (not on every
+   render -- only the ones that moved).
+
+   All animation timing is collected here, in one place, so it
+   can be tuned without hunting through the rest of the file.
+   ============================================================ */
+
+const ANIMATION = {
+  CARD_STAGGER_MS: 120,     // delay between each card's entrance
+  CARD_DURATION_MS: 350,    // how long each card's entrance animation takes
+  ODDS_PULSE_DURATION_MS: 700, // how long the odds-changed flash lasts
+};
+
+const SUIT_SYMBOLS = { S: '♠', H: '♥', D: '♦', C: '♣' };
+let lastOddsShown = { dealer: null, push: null, player: null };
+
+function getCurrentMargin() {
+  return parseFloat(document.getElementById('marginSelect').value);
+}
+
+function getStakeInput() {
+  return parseFloat(document.getElementById('stake').value);
+}
+
+function clearStakeInput() {
+  document.getElementById('stake').value = '';
+}
+
+function setStakeInput(amount) {
+  document.getElementById('stake').value = amount;
+}
+
+function renderCards(rowId, hand, hideSecond) {
+  const row = document.getElementById(rowId);
+  row.innerHTML = '';
+
+  hand.cards.forEach((card, i) => {
+    const div = document.createElement('div');
+    if (hideSecond && i === 1) {
+      div.className = 'card hidden animate-in';
+    } else {
+      div.className = 'card animate-in';
+      div.innerHTML = `<span class="rank">${card.rank}</span><span class="suit">${SUIT_SYMBOLS[card.suit]}</span>`;
+    }
+    div.style.animationDuration = ANIMATION.CARD_DURATION_MS + 'ms';
+    div.style.animationDelay = (i * ANIMATION.CARD_STAGGER_MS) + 'ms';
+    row.appendChild(div);
+  });
+
+  if (hand.cards.length > 0) {
+    const badge = document.createElement('div');
+    badge.className = 'score-badge';
+    if (hideSecond) {
+      badge.textContent = hand.cards[0].value();
+    } else if (hand.bust()) {
+      badge.textContent = 'X';
+    } else {
+      badge.textContent = hand.total();
+    }
+    row.appendChild(badge);
+  }
+}
+
+function setOddsDisplay(odds) {
+  currentOdds = odds;
+
+  ['dealer', 'push', 'player'].forEach(outcome => {
+    const el = document.getElementById('odds-' + outcome);
+    const box = document.getElementById('box-' + outcome);
+    const newText = odds[outcome] ? odds[outcome].toFixed(2) : '--';
+    const changed = newText !== (el.textContent || '');
+
+    el.textContent = newText;
+
+    if (changed && lastOddsShown[outcome] !== null) {
+      box.classList.remove('pulse');
+      void box.offsetWidth; // restart the animation if it's already mid-flash
+      box.style.animationDuration = ANIMATION.ODDS_PULSE_DURATION_MS + 'ms';
+      box.classList.add('pulse');
+    }
+    lastOddsShown[outcome] = newText;
+  });
+
+  renderCashoutOptions();
+}
+
+function setOddsSettled(isSettled) {
+  ['dealer', 'push', 'player'].forEach(o => {
+    document.getElementById('box-' + o).classList.toggle('settled', isSettled);
+  });
+}
+
+function highlightSelected(outcome) {
+  document.querySelectorAll('.odds-box').forEach(el => el.classList.remove('selected'));
+  if (outcome) document.getElementById('box-' + outcome).classList.add('selected');
+}
+
+function renderBets() {
+  const list = document.getElementById('betsList');
+  list.innerHTML = bets.map(b =>
+    `<div>£${b.stake.toFixed(2)} ${b.outcome.toUpperCase()} @ ${b.odds.toFixed(2)}</div>`
+  ).join('');
+}
+
+function renderPositions() {
+  ['dealer', 'push', 'player'].forEach(outcome => {
+    const value = positionFor(outcome);
+    const el = document.getElementById('pos-' + outcome);
+    el.textContent = (value >= 0 ? '+£' : '-£') + Math.abs(value).toFixed(2);
+    el.classList.remove('positive', 'negative');
+    if (value > 0) el.classList.add('positive');
+    else if (value < 0) el.classList.add('negative');
+  });
+}
+
+function renderSession() {
+  const net = sessionReturned - sessionStaked;
+  const sign = net >= 0 ? '+' : '-';
+  document.getElementById('sessionRow').textContent =
+    `Staked £${sessionStaked.toFixed(2)} · Returned £${sessionReturned.toFixed(2)} · Net ${sign}£${Math.abs(net).toFixed(2)}`;
+}
+
+function renderCashoutOptions() {
+  const section = document.getElementById('cashoutSection');
+  const canCashOut = phase === 'awaiting_peek' || phase === 'player_turn' || phase === 'dealer_turn';
+
+  if (!canCashOut) {
+    section.innerHTML = '';
+    return;
+  }
+
+  const rows = ['dealer', 'push', 'player'].map(outcome => {
+    const value = cashoutValueFor(outcome);
+    if (value === null) return '';
+    return `<div class="cashout-row">
+      <span class="cashout-label">CASH OUT ${outcome.toUpperCase()}</span>
+      <span class="cashout-value">£${value.toFixed(2)}</span>
+      <button class="yes-btn" onclick="confirmCashout('${outcome}')">YES</button>
+      <button class="no-btn" onclick="declineCashout()">NO</button>
+    </div>`;
+  }).join('');
+
+  section.innerHTML = rows;
+}
+
+function showResult(outcome, amount) {
+  const banner = document.getElementById('resultBanner');
+  if (!outcome) {
+    banner.textContent = '';
+    return;
+  }
+  const labels = { player: 'PLAYER WINS', dealer: 'DEALER WINS', push: 'PUSH' };
+  let text = labels[outcome];
+  if (amount !== undefined) {
+    const sign = amount >= 0 ? '+' : '-';
+    text += ` (${sign}£${Math.abs(amount).toFixed(2)})`;
+  }
+  banner.textContent = text;
+}
+
+function setMainButton(label) {
+  document.getElementById('mainBtn').textContent = label.toUpperCase();
+}
+
+function renderPresets() {
+  const row = document.getElementById('presetRow');
+  row.innerHTML = presetStakes.map(amount =>
+    `<button onclick="fillStake(${amount})">£${amount}</button>`
+  ).join('') + `<button class="edit-presets" onclick="editPresets()">✎</button>`;
+}
+
+initScreen();
+</script>
+
+</body>
+</html>
