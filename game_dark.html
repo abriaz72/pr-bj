@@ -577,6 +577,15 @@ function endHand(outcome) {
   setMainButton('New game');
 }
 
+// P(dealer has blackjack), given the up-card's value -- 0 unless the
+// up-card is an Ace or ten-value. Matches CARD_PROBABILITIES in
+// dealer_probability.py exactly (1/13 per rank, 4/13 for any ten-value).
+function dealerBlackjackProbability(dealerUpValue) {
+  if (dealerUpValue === 11) return 4 / 13; // needs a ten-value hole card
+  if (dealerUpValue === 10) return 1 / 13; // needs an Ace hole card
+  return 0;
+}
+
 function startDeal() {
   shoe = new Shoe(8);
   player = new Hand();
@@ -594,7 +603,19 @@ function startDeal() {
   const requiresPeek = upcardRequiresPeek(dealerUp);
   phase = requiresPeek ? 'awaiting_peek' : 'player_turn';
 
-  if (!player.blackjack()) {
+  if (player.blackjack()) {
+    // The only thing still undecided is whether the dealer ALSO has
+    // blackjack (a push) or doesn't (player wins outright) -- a real,
+    // calculable price, not a gap to leave blank while waiting on the
+    // peek button.
+    const pBj = dealerBlackjackProbability(dealerUp.value());
+    const margin = getCurrentMargin();
+    setOddsDisplay({
+      player: oddsFromProbability(1 - pBj, margin),
+      dealer: null,
+      push: oddsFromProbability(pBj, margin),
+    });
+  } else {
     const [pTotal, pSoft] = player.totalAndSoft();
     const odds = requiresPeek
       ? startingHandOdds(pTotal, pSoft, dealerUp.value())
@@ -744,7 +765,7 @@ function renderCards(rowId, hand, hideSecond) {
     if (hideSecond) {
       badge.textContent = hand.cards[0].value();
     } else if (hand.bust()) {
-      badge.textContent = 'X';
+      badge.textContent = hand.total();
     } else {
       badge.textContent = hand.total();
     }
@@ -812,7 +833,6 @@ function renderCashoutOptions() {
       <span class="cashout-label">CASH OUT ${outcome.toUpperCase()}</span>
       <span class="cashout-value">£${value.toFixed(2)}</span>
       <button class="yes-btn" onclick="confirmCashout('${outcome}')">YES</button>
-      <button class="no-btn" onclick="declineCashout()">NO</button>
     </div>`;
   }).join('');
 

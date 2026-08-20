@@ -792,7 +792,7 @@ function renderCards(rowId, hand, hideSecond) {
     if (hideSecond) {
       badge.textContent = hand.cards[0].value();
     } else if (hand.bust()) {
-      badge.textContent = 'X';
+      badge.textContent = hand.total();
     } else {
       badge.textContent = hand.total();
     }
@@ -875,7 +875,6 @@ function renderCashoutOptions() {
       <span class="cashout-label">CASH OUT ${outcome.toUpperCase()}</span>
       <span class="cashout-value">£${value.toFixed(2)}</span>
       <button class="yes-btn" onclick="confirmCashout('${outcome}')">YES</button>
-      <button class="no-btn" onclick="declineCashout()">NO</button>
     </div>`;
   }).join('');
 
