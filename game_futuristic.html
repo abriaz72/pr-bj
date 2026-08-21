@@ -173,16 +173,44 @@
     font-family: inherit;
   }
 
-  .main-action-row button {
-    width: 100%;
-    padding: 13px;
+  .run-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #888;
+  }
+  .run-row button {
     border: 1px solid #00E5FF;
     background: #000;
     color: #00E5FF;
-    font-size: 15px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 5px 12px;
+    letter-spacing: 1px;
+  }
+  .run-row button.running { background: #00E5FF; color: #001a1e; }
+  .timing-input input {
+    width: 34px;
+    background: #000;
+    color: #fff;
+    border: 1px solid #444;
+    font-family: inherit;
+    font-size: 11px;
+    padding: 2px;
+  }
+
+  .countdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #00E5FF;
+    padding: 13px;
+    font-size: 14px;
     font-weight: 700;
     letter-spacing: 1px;
-    font-family: inherit;
+    color: #00E5FF;
   }
 
   /* ---------- Animations ---------- */
@@ -202,6 +230,12 @@
 <body>
 
 <div class="screen">
+
+  <div class="run-row">
+    <button id="runBtn" onclick="toggleRunning()">START</button>
+    <span class="timing-input">Deal <input type="number" id="preDealSecInput" value="20" onchange="setPreDealSeconds(this.value)">s</span>
+    <span class="timing-input">Other <input type="number" id="otherSecInput" value="10" onchange="setOtherSeconds(this.value)">s</span>
+  </div>
 
   <div class="margin-row">
     Margin: <select id="marginSelect" onchange="onMarginChange()">
@@ -255,8 +289,9 @@
     <button id="backBtn" onclick="placeBet()">BET</button>
   </div>
 
-  <div class="main-action-row">
-    <button id="mainBtn" onclick="onMainButtonPress()">DEAL</button>
+  <div class="countdown-row" id="countdownRow">
+    <span id="countdownLabel">PLACE YOUR BETS</span>
+    <span id="countdownValue">20</span>
   </div>
 
 </div>
@@ -278,9 +313,10 @@
      renderSession()
      renderCashoutOptions()
      showResult(outcome, amount) -- outcome may be null (clear banner)
-     setMainButton(label)
+     setCountdownDisplay(secondsRemaining, label)
      renderPresets()
      highlightSelected(outcome) -- outcome may be null (clear all)
+     setRunningState(isRunning)
      getCurrentMargin() -> number
      getStakeInput() -> number
      clearStakeInput()
@@ -461,6 +497,86 @@ let presetStakes = [10, 25, 50, 100];
 let phase = 'pre_deal';
 let shoe, player, dealer, dealerUp;
 
+/* ---------- Continuous-play timer engine ----------
+   The game auto-advances on its own clock rather than waiting for a
+   button press. TIMING is deliberately editable at runtime (via the
+   skin's inputs) rather than a fixed constant. */
+
+const TIMING = {
+  preDealSeconds: 20, // the pre-deal betting window
+  otherSeconds: 10,   // every other window: peek pause, each card dealt
+};
+
+let isRunning = false;
+let countdownInterval = null;
+let countdownRemaining = 0;
+let countdownSeconds = 0;
+let countdownLabel = '';
+let pendingAdvanceFn = null;
+
+function clearCountdownTimer() {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+}
+
+// Queues the next automatic step. If the game is currently running,
+// the countdown starts ticking immediately; if stopped, it just shows
+// the static full duration until Start is pressed.
+function scheduleNext(seconds, label, advanceFn) {
+  clearCountdownTimer();
+  countdownSeconds = seconds;
+  countdownRemaining = seconds;
+  countdownLabel = label;
+  pendingAdvanceFn = advanceFn;
+  setCountdownDisplay(countdownRemaining, countdownLabel);
+  if (isRunning) tickStart();
+}
+
+function tickStart() {
+  clearCountdownTimer();
+  countdownInterval = setInterval(() => {
+    countdownRemaining -= 1;
+    if (countdownRemaining <= 0) {
+      clearCountdownTimer();
+      const fn = pendingAdvanceFn;
+      pendingAdvanceFn = null;
+      if (fn) fn();
+    } else {
+      setCountdownDisplay(countdownRemaining, countdownLabel);
+    }
+  }, 1000);
+}
+
+// Start/Stop is a pause: stopping freezes whatever countdown is showing
+// (it does not lose your place); starting again resumes from a fresh
+// full duration for the current window, not the exact second it was
+// paused at -- the simplest predictable behaviour for a demo control.
+function toggleRunning() {
+  isRunning = !isRunning;
+  setRunningState(isRunning);
+  if (isRunning) {
+    if (pendingAdvanceFn) {
+      countdownRemaining = countdownSeconds;
+      setCountdownDisplay(countdownRemaining, countdownLabel);
+      tickStart();
+    }
+  } else {
+    clearCountdownTimer();
+  }
+}
+
+function setPreDealSeconds(value) {
+  const n = parseInt(value, 10);
+  if (!isNaN(n) && n > 0) TIMING.preDealSeconds = n;
+}
+
+function setOtherSeconds(value) {
+  const n = parseInt(value, 10);
+  if (!isNaN(n) && n > 0) TIMING.otherSeconds = n;
+}
+
 /* ---------- Pure calculations ---------- */
 
 function positionFor(outcome) {
@@ -542,21 +658,7 @@ function declineCashout() {
   // No action -- the position stays open and keeps updating live.
 }
 
-function onMainButtonPress() {
-  if (phase === 'pre_deal') {
-    startDeal();
-  } else if (phase === 'awaiting_peek') {
-    checkDealerBlackjack();
-  } else if (phase === 'player_turn') {
-    playerNextCard();
-  } else if (phase === 'dealer_turn') {
-    dealerNextCard();
-  } else if (phase === 'settled') {
-    newGame();
-  }
-}
-
-function newGame() {
+function resetHandDisplay() {
   phase = 'pre_deal';
   bets = [];
   selected = null;
@@ -569,7 +671,13 @@ function newGame() {
   renderBets();
   renderPositions();
   setOddsDisplay(preDealOdds());
-  setMainButton('Deal');
+}
+
+// Enters the pre-deal betting window: resets the display for a fresh
+// hand, then queues the countdown that leads into the deal itself.
+function beginPreDealWindow() {
+  resetHandDisplay();
+  scheduleNext(TIMING.preDealSeconds, 'Place your bets', startDeal);
 }
 
 function endHand(outcome) {
@@ -589,7 +697,7 @@ function endHand(outcome) {
   setOddsDisplay({ dealer: null, push: null, player: null });
   setOddsSettled(true);
   renderCashoutOptions();
-  setMainButton('New game');
+  scheduleNext(TIMING.otherSeconds, 'Next hand', beginPreDealWindow);
 }
 
 // P(dealer has blackjack), given the up-card's value -- 0 unless the
@@ -639,7 +747,7 @@ function startDeal() {
   }
 
   if (requiresPeek) {
-    setMainButton('Check for dealer blackjack');
+    scheduleNext(TIMING.otherSeconds, 'Checking for dealer blackjack', checkDealerBlackjack);
     return;
   }
 
@@ -665,7 +773,7 @@ function proceedAfterPeek() {
   phase = 'player_turn';
   const [pTotal, pSoft] = player.totalAndSoft();
   setOddsDisplay(playerPhaseOdds(pTotal, pSoft, dealerUp.value()));
-  setMainButton('Next card');
+  scheduleNext(TIMING.otherSeconds, 'Player draws', playerNextCard);
 }
 
 function playerNextCard() {
@@ -682,6 +790,7 @@ function playerNextCard() {
     }
     const [newTotal, newSoft] = player.totalAndSoft();
     setOddsDisplay(playerPhaseOdds(newTotal, newSoft, dealerUp.value()));
+    scheduleNext(TIMING.otherSeconds, 'Player draws', playerNextCard);
     return;
   }
 
@@ -696,7 +805,7 @@ function playerNextCard() {
 
   setOddsDisplay(dealerPhaseOdds(dTotal, dSoft, playerFinalTotal));
   phase = 'dealer_turn';
-  setMainButton('Next card');
+  scheduleNext(TIMING.otherSeconds, 'Dealer draws', dealerNextCard);
 }
 
 function dealerNextCard() {
@@ -717,6 +826,7 @@ function dealerNextCard() {
   }
 
   setOddsDisplay(dealerPhaseOdds(dTotal, dSoft, playerFinalTotal));
+  scheduleNext(TIMING.otherSeconds, 'Dealer draws', dealerNextCard);
 }
 
 function onMarginChange() {
@@ -726,9 +836,10 @@ function onMarginChange() {
 }
 
 function initScreen() {
-  setOddsDisplay(preDealOdds());
   renderSession();
   renderPresets();
+  setRunningState(false);
+  beginPreDealWindow();
 }
 </script>
 <script>
@@ -896,8 +1007,15 @@ function showResult(outcome, amount) {
   banner.textContent = text;
 }
 
-function setMainButton(label) {
-  document.getElementById('mainBtn').textContent = label.toUpperCase();
+function setCountdownDisplay(secondsRemaining, label) {
+  document.getElementById('countdownLabel').textContent = label.toUpperCase();
+  document.getElementById('countdownValue').textContent = secondsRemaining;
+}
+
+function setRunningState(running) {
+  const btn = document.getElementById('runBtn');
+  btn.textContent = running ? 'STOP' : 'START';
+  btn.classList.toggle('running', running);
 }
 
 function renderPresets() {
