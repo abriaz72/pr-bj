@@ -479,7 +479,7 @@ const TIMING = {
 let isRunning = false;
 let countdownInterval = null;
 let countdownRemaining = 0;
-let countdownSeconds = 0;
+let countdownCategory = null; // 'preDeal' | 'other' -- which setting currently governs this window
 let countdownLabel = '';
 let pendingAdvanceFn = null;
 
@@ -490,13 +490,17 @@ function clearCountdownTimer() {
   }
 }
 
-// Queues the next automatic step. If the game is currently running,
-// the countdown starts ticking immediately; if stopped, it just shows
-// the static full duration until Start is pressed.
-function scheduleNext(seconds, label, advanceFn) {
+function secondsFor(category) {
+  return category === 'preDeal' ? TIMING.preDealSeconds : TIMING.otherSeconds;
+}
+
+// Queues the next automatic step, by CATEGORY rather than a raw number,
+// so that editing the relevant setting can update this exact countdown
+// live -- not just windows scheduled in the future.
+function scheduleNext(category, label, advanceFn) {
   clearCountdownTimer();
-  countdownSeconds = seconds;
-  countdownRemaining = seconds;
+  countdownCategory = category;
+  countdownRemaining = secondsFor(category);
   countdownLabel = label;
   pendingAdvanceFn = advanceFn;
   setCountdownDisplay(countdownRemaining, countdownLabel);
@@ -519,31 +523,40 @@ function tickStart() {
 }
 
 // Start/Stop is a pause: stopping freezes whatever countdown is showing
-// (it does not lose your place); starting again resumes from a fresh
-// full duration for the current window, not the exact second it was
-// paused at -- the simplest predictable behaviour for a demo control.
+// (it does not lose your place); starting again resumes the SAME
+// countdown from where it was left, not a fresh full duration.
 function toggleRunning() {
   isRunning = !isRunning;
   setRunningState(isRunning);
   if (isRunning) {
-    if (pendingAdvanceFn) {
-      countdownRemaining = countdownSeconds;
-      setCountdownDisplay(countdownRemaining, countdownLabel);
-      tickStart();
-    }
+    if (pendingAdvanceFn) tickStart();
   } else {
     clearCountdownTimer();
   }
 }
 
+// Edits apply immediately to whatever countdown is currently showing,
+// if it belongs to the setting being changed -- not just to future
+// windows. This is what makes the editable timing fields actually
+// feel live rather than silently doing nothing until later.
 function setPreDealSeconds(value) {
   const n = parseInt(value, 10);
-  if (!isNaN(n) && n > 0) TIMING.preDealSeconds = n;
+  if (isNaN(n) || n <= 0) return;
+  TIMING.preDealSeconds = n;
+  if (countdownCategory === 'preDeal') {
+    countdownRemaining = n;
+    setCountdownDisplay(countdownRemaining, countdownLabel);
+  }
 }
 
 function setOtherSeconds(value) {
   const n = parseInt(value, 10);
-  if (!isNaN(n) && n > 0) TIMING.otherSeconds = n;
+  if (isNaN(n) || n <= 0) return;
+  TIMING.otherSeconds = n;
+  if (countdownCategory === 'other') {
+    countdownRemaining = n;
+    setCountdownDisplay(countdownRemaining, countdownLabel);
+  }
 }
 
 /* ---------- Pure calculations ---------- */
@@ -646,7 +659,7 @@ function resetHandDisplay() {
 // hand, then queues the countdown that leads into the deal itself.
 function beginPreDealWindow() {
   resetHandDisplay();
-  scheduleNext(TIMING.preDealSeconds, 'Place your bets', startDeal);
+  scheduleNext('preDeal', 'Place your bets', startDeal);
 }
 
 function endHand(outcome) {
@@ -666,7 +679,7 @@ function endHand(outcome) {
   setOddsDisplay({ dealer: null, push: null, player: null });
   setOddsSettled(true);
   renderCashoutOptions();
-  scheduleNext(TIMING.otherSeconds, 'Next hand', beginPreDealWindow);
+  scheduleNext('other', 'Next hand', beginPreDealWindow);
 }
 
 // P(dealer has blackjack), given the up-card's value -- 0 unless the
@@ -716,7 +729,7 @@ function startDeal() {
   }
 
   if (requiresPeek) {
-    scheduleNext(TIMING.otherSeconds, 'Checking for dealer blackjack', checkDealerBlackjack);
+    scheduleNext('other', 'Checking for dealer blackjack', checkDealerBlackjack);
     return;
   }
 
@@ -742,7 +755,7 @@ function proceedAfterPeek() {
   phase = 'player_turn';
   const [pTotal, pSoft] = player.totalAndSoft();
   setOddsDisplay(playerPhaseOdds(pTotal, pSoft, dealerUp.value()));
-  scheduleNext(TIMING.otherSeconds, 'Player draws', playerNextCard);
+  scheduleNext('other', 'Player draws', playerNextCard);
 }
 
 function playerNextCard() {
@@ -759,7 +772,7 @@ function playerNextCard() {
     }
     const [newTotal, newSoft] = player.totalAndSoft();
     setOddsDisplay(playerPhaseOdds(newTotal, newSoft, dealerUp.value()));
-    scheduleNext(TIMING.otherSeconds, 'Player draws', playerNextCard);
+    scheduleNext('other', 'Player draws', playerNextCard);
     return;
   }
 
@@ -774,7 +787,7 @@ function playerNextCard() {
 
   setOddsDisplay(dealerPhaseOdds(dTotal, dSoft, playerFinalTotal));
   phase = 'dealer_turn';
-  scheduleNext(TIMING.otherSeconds, 'Dealer draws', dealerNextCard);
+  scheduleNext('other', 'Dealer draws', dealerNextCard);
 }
 
 function dealerNextCard() {
@@ -795,7 +808,7 @@ function dealerNextCard() {
   }
 
   setOddsDisplay(dealerPhaseOdds(dTotal, dSoft, playerFinalTotal));
-  scheduleNext(TIMING.otherSeconds, 'Dealer draws', dealerNextCard);
+  scheduleNext('other', 'Dealer draws', dealerNextCard);
 }
 
 function onMarginChange() {
