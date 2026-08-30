@@ -201,6 +201,31 @@
     padding: 2px;
   }
 
+  .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .info-btn {
+    border: 1px solid #00E5FF;
+    background: #000;
+    color: #00E5FF;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .info-title { color: #00E5FF; font-size: 11px; letter-spacing: 1px; }
+  .info-screen { overflow-y: auto; }
+  .info-section { margin-top: 16px; }
+  .info-label { color: #00E5FF; font-size: 10px; letter-spacing: 1px; margin-bottom: 6px; }
+  .info-section select { background: #000; color: #fff; border: 1px solid #444; font-family: inherit; font-size: 13px; padding: 4px; }
+  .info-section p { color: #ccc; font-size: 12px; line-height: 1.5; margin: 0 0 8px; }
+  .peek-result { color: #00E5FF; font-size: 11px; min-height: 14px; }
+
   .countdown-row {
     display: flex;
     justify-content: space-between;
@@ -212,6 +237,7 @@
     letter-spacing: 1px;
     color: #00E5FF;
   }
+  .countdown-row .urgent { color: #E5484D; }
 
   /* ---------- Animations ---------- */
   @keyframes cardIn {
@@ -229,23 +255,18 @@
 </head>
 <body>
 
-<div class="screen">
+<div class="screen" id="mainScreen">
 
-  <div class="run-row">
-    <button id="runBtn" onclick="toggleRunning()">START</button>
-    <span class="timing-input">Deal <input type="number" id="preDealSecInput" value="20" onchange="setPreDealSeconds(this.value)">s</span>
-    <span class="timing-input">Other <input type="number" id="otherSecInput" value="10" onchange="setOtherSeconds(this.value)">s</span>
-  </div>
-
-  <div class="margin-row">
-    Margin: <select id="marginSelect" onchange="onMarginChange()">
-      <option value="0.02">2%</option>
-      <option value="0.03">3%</option>
-      <option value="0.05" selected>5%</option>
-    </select>
+  <div class="top-row">
+    <div class="run-row">
+      <button id="runBtn" onclick="toggleRunning()">START</button>
+    </div>
+    <button class="info-btn" onclick="toggleInfoPanel(true)">i</button>
   </div>
 
   <div class="session-row" id="sessionRow">Staked £0.00 · Returned £0.00 · Net £0.00</div>
+
+  <div class="peek-result" id="peekResult"></div>
 
   <div class="hand-label">DEALER</div>
   <div class="hand-row" id="dealerRow"></div>
@@ -296,6 +317,44 @@
 
 </div>
 
+<div class="screen info-screen" id="infoScreen" style="display:none;">
+  <div class="top-row">
+    <span class="info-title">SETTINGS &amp; RULES</span>
+    <button class="info-btn" onclick="toggleInfoPanel(false)">&times;</button>
+  </div>
+
+  <div class="info-section">
+    <div class="info-label">MARGIN</div>
+    <select id="marginSelect" onchange="onMarginChange()">
+      <option value="0.02">2%</option>
+      <option value="0.03">3%</option>
+      <option value="0.05" selected>5%</option>
+    </select>
+  </div>
+
+  <div class="info-section">
+    <div class="info-label">TIMING (SECONDS)</div>
+    <span class="timing-input">Deal <input type="number" id="preDealSecInput" value="20" onchange="setPreDealSeconds(this.value)"></span>
+    <span class="timing-input">Other <input type="number" id="otherSecInput" value="10" onchange="setOtherSeconds(this.value)"></span>
+  </div>
+
+  <div class="info-section">
+    <div class="info-label">HOW THE ENGINE PLAYS</div>
+    <p>Every hand is dealt from a real 8-deck shoe. The engine plays the player's hand automatically using basic strategy, and the dealer hits on soft 17, stands on hard 17 and above.</p>
+    <p>If the dealer's up-card is an Ace or a ten-value card, the dealer checks the hidden card for blackjack before play continues.</p>
+  </div>
+
+  <div class="info-section">
+    <div class="info-label">NO SPLITTING</div>
+    <p>A pair is not played as two hands. It's scored as its ordinary total and played through the same rules as any other hand — a pair of 7s (14) is just a hard 14, not a split.</p>
+  </div>
+
+  <div class="info-section">
+    <div class="info-label">NO DOUBLING</div>
+    <p>Where basic strategy would normally double the stake, the engine simply takes one card instead, at no extra cost, then plays on from the new total as usual.</p>
+  </div>
+</div>
+
 <script>/* ============================================================
    CORE — shared game backend, used by every visual skin.
    Contains: the engine (cards, shoe, strategy, dealer play),
@@ -314,6 +373,7 @@
      renderCashoutOptions()
      showResult(outcome, amount) -- outcome may be null (clear banner)
      setCountdownDisplay(secondsRemaining, label)
+     setPeekResult(text) -- text may be '' to clear it
      renderPresets()
      highlightSelected(outcome) -- outcome may be null (clear all)
      setRunningState(isRunning)
@@ -683,6 +743,7 @@ function resetHandDisplay() {
   setOddsSettled(false);
   renderBets();
   renderPositions();
+  setPeekResult('');
   setOddsDisplay(preDealOdds());
 }
 
@@ -710,7 +771,7 @@ function endHand(outcome) {
   setOddsDisplay({ dealer: null, push: null, player: null });
   setOddsSettled(true);
   renderCashoutOptions();
-  scheduleNext('other', 'Next hand', beginPreDealWindow);
+  scheduleNext('other', 'Next hand in', beginPreDealWindow);
 }
 
 // P(dealer has blackjack), given the up-card's value -- 0 unless the
@@ -760,7 +821,7 @@ function startDeal() {
   }
 
   if (requiresPeek) {
-    scheduleNext('other', 'Checking for dealer blackjack', checkDealerBlackjack);
+    scheduleNext('other', 'Checking for dealer blackjack in', checkDealerBlackjack);
     return;
   }
 
@@ -770,9 +831,11 @@ function startDeal() {
 function checkDealerBlackjack() {
   if (dealerHasBlackjack(dealer)) {
     renderCards('dealerRow', dealer, false);
+    setPeekResult('Dealer has Blackjack');
     endHand(player.blackjack() ? 'push' : 'dealer');
     return;
   }
+  setPeekResult("Dealer doesn't have Blackjack");
   proceedAfterPeek();
 }
 
@@ -786,27 +849,39 @@ function proceedAfterPeek() {
   phase = 'player_turn';
   const [pTotal, pSoft] = player.totalAndSoft();
   setOddsDisplay(playerPhaseOdds(pTotal, pSoft, dealerUp.value()));
-  scheduleNext('other', 'Player draws', playerNextCard);
+  schedulePlayerStep();
 }
 
-function playerNextCard() {
+// The single place that decides what genuinely happens next for the
+// player, given their ACTUAL current hand -- used both right after the
+// deal and after every hit, so the countdown label always matches what
+// is really about to occur (never "Player draws" when the current total
+// would already stand).
+function schedulePlayerStep() {
   const [total, soft] = player.totalAndSoft();
   const action = basicStrategy(total, soft, dealerUp.value());
 
   if (action === 'HIT') {
-    player.add(shoe.deal());
-    renderCards('playerRow', player, false);
-    if (player.bust()) {
-      renderCards('dealerRow', dealer, false);
-      endHand('dealer');
-      return;
-    }
-    const [newTotal, newSoft] = player.totalAndSoft();
-    setOddsDisplay(playerPhaseOdds(newTotal, newSoft, dealerUp.value()));
-    scheduleNext('other', 'Player draws', playerNextCard);
+    scheduleNext('other', 'Player draws in', playerDrawCard);
+  } else {
+    scheduleNext('other', "Reveal dealer's card in", revealDealerAndProceed);
+  }
+}
+
+function playerDrawCard() {
+  player.add(shoe.deal());
+  renderCards('playerRow', player, false);
+  if (player.bust()) {
+    renderCards('dealerRow', dealer, false);
+    endHand('dealer');
     return;
   }
+  const [newTotal, newSoft] = player.totalAndSoft();
+  setOddsDisplay(playerPhaseOdds(newTotal, newSoft, dealerUp.value()));
+  schedulePlayerStep();
+}
 
+function revealDealerAndProceed() {
   renderCards('dealerRow', dealer, false);
   const [dTotal, dSoft] = dealer.totalAndSoft();
   const [playerFinalTotal] = player.totalAndSoft();
@@ -818,7 +893,7 @@ function playerNextCard() {
 
   setOddsDisplay(dealerPhaseOdds(dTotal, dSoft, playerFinalTotal));
   phase = 'dealer_turn';
-  scheduleNext('other', 'Dealer draws', dealerNextCard);
+  scheduleNext('other', 'Dealer draws in', dealerNextCard);
 }
 
 function dealerNextCard() {
@@ -839,7 +914,7 @@ function dealerNextCard() {
   }
 
   setOddsDisplay(dealerPhaseOdds(dTotal, dSoft, playerFinalTotal));
-  scheduleNext('other', 'Dealer draws', dealerNextCard);
+  scheduleNext('other', 'Dealer draws in', dealerNextCard);
 }
 
 function onMarginChange() {
@@ -1022,7 +1097,18 @@ function showResult(outcome, amount) {
 
 function setCountdownDisplay(secondsRemaining, label) {
   document.getElementById('countdownLabel').textContent = label.toUpperCase();
-  document.getElementById('countdownValue').textContent = secondsRemaining;
+  const valueEl = document.getElementById('countdownValue');
+  valueEl.textContent = secondsRemaining;
+  valueEl.classList.toggle('urgent', secondsRemaining <= 5);
+}
+
+function setPeekResult(text) {
+  document.getElementById('peekResult').textContent = text;
+}
+
+function toggleInfoPanel(show) {
+  document.getElementById('mainScreen').style.display = show ? 'none' : 'flex';
+  document.getElementById('infoScreen').style.display = show ? 'flex' : 'none';
 }
 
 function setRunningState(running) {
