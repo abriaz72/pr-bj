@@ -99,9 +99,7 @@
   .odds-box .position { font-size: 13px; font-weight: 700; margin-top: 4px; color: #3DDC97; }
   .odds-box .position.negative { color: #E5484D; }
 
-  .box-bets { margin-top: 6px; font-size: 10px; color: #aaa; line-height: 1.6; max-height: 46px; overflow-y: auto; }
-  .bets-list { font-size: 11px; color: #aaa; max-height: 36px; overflow-y: auto; }
-  .bets-list div { padding: 1px 0; }
+  .box-bets { margin-top: 6px; height: 46px; font-size: 10px; color: #aaa; line-height: 1.6; overflow-y: auto; }
 
   .cashout-section { display: flex; flex-direction: column; gap: 4px; }
   .cashout-row {
@@ -125,8 +123,9 @@
     padding: 8px;
     min-height: 16px;
     color: #fff;
-    border: 1px solid #333;
+    border: 1px solid transparent;
   }
+  .result-banner.filled { border-color: #333; }
 
   .spacer { flex: 1; }
 
@@ -155,7 +154,7 @@
     font-family: inherit;
   }
   .controls button {
-    flex: 1;
+    flex: 0 0 50%;
     padding: 12px 16px;
     border: 1px solid #fff;
     background: #fff;
@@ -971,6 +970,7 @@ function showResult(outcome, amount) {
   const banner = document.getElementById('resultBanner');
   if (!outcome) {
     banner.textContent = '';
+    banner.classList.remove('filled');
     return;
   }
   const labels = { player: 'PLAYER WINS', dealer: 'DEALER WINS', push: 'PUSH' };
@@ -980,6 +980,7 @@ function showResult(outcome, amount) {
     text += ` (${sign}£${Math.abs(amount).toFixed(2)})`;
   }
   banner.textContent = text;
+  banner.classList.add('filled');
 }
 
 function setCountdownDisplay(secondsRemaining, label) {
