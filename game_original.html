@@ -107,7 +107,8 @@
   }
   .cashout-row .cashout-label { flex: 1; color: #333; }
   .cashout-row .cashout-value { font-weight: bold; color: #1a7d1a; }
-  .cashout-row button { border: none; border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: bold; }
+  .box-bets { margin-top: 6px; font-size: 11px; color: #777; line-height: 1.6; max-height: 50px; overflow-y: auto; }
+  .cashout-row button { border: none; border-radius: 6px; padding: 10px 18px; font-size: 14px; font-weight: bold; }
   .cashout-row .yes-btn { background: #1a7d1a; color: #fff; }
   .cashout-row .no-btn { background: #eee; color: #555; }
   .result-banner {
@@ -149,20 +150,21 @@
     align-items: center;
   }
   .controls input {
-    flex: 1;
-    min-width: 0;
-    padding: 10px;
+    width: 70px;
+    flex: 0 0 auto;
+    padding: 10px 8px;
     border: 1px solid #ccc;
     border-radius: 8px;
     font-size: 15px;
   }
   .controls button {
-    padding: 10px 16px;
+    flex: 1;
+    padding: 12px 16px;
     border: none;
     border-radius: 8px;
     background: #222;
     color: #fff;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: bold;
   }
   .main-action-row { display: flex; }
@@ -206,20 +208,21 @@
       <div class="name">Dealer</div>
       <div class="value" id="odds-dealer">--</div>
       <div class="position" id="pos-dealer">£0.00</div>
+      <div class="box-bets" id="bets-dealer"></div>
     </div>
     <div class="odds-box push" id="box-push" onclick="select('push')">
       <div class="name">Push</div>
       <div class="value" id="odds-push">--</div>
       <div class="position" id="pos-push">£0.00</div>
+      <div class="box-bets" id="bets-push"></div>
     </div>
     <div class="odds-box" id="box-player" onclick="select('player')">
       <div class="name">Player</div>
       <div class="value" id="odds-player">--</div>
       <div class="position" id="pos-player">£0.00</div>
+      <div class="box-bets" id="bets-player"></div>
     </div>
   </div>
-
-  <div class="bets-list" id="betsList"></div>
 
   <div class="cashout-section" id="cashoutSection"></div>
 
@@ -926,10 +929,13 @@ function highlightSelected(outcome) {
 }
 
 function renderBets() {
-  const list = document.getElementById('betsList');
-  list.innerHTML = bets.map(b =>
-    `<div>£${b.stake.toFixed(2)} on ${b.outcome} @ ${b.odds.toFixed(2)}</div>`
-  ).join('');
+  ['dealer', 'push', 'player'].forEach(outcome => {
+    const el = document.getElementById('bets-' + outcome);
+    const matching = bets.filter(b => b.outcome === outcome);
+    el.innerHTML = matching.map(b =>
+      `<div>£${b.stake.toFixed(2)} @ ${b.odds.toFixed(2)}</div>`
+    ).join('');
+  });
 }
 
 function renderPositions() {
