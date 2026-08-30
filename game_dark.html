@@ -181,7 +181,7 @@
 
   <div class="session-row" id="sessionRow">Staked £0.00 · Returned £0.00 · Net £0.00</div>
 
-  <div id="peekResult" style="border:1px solid #fff;background:#111;color:#fff;font-size:15px;font-weight:700;text-align:center;padding:10px;min-height:16px;"></div>
+  <div id="peekResult" style="height:44px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:700;text-align:center;border:1px solid transparent;"></div>
 
   <div class="hand-label">DEALER</div>
   <div class="hand-row" id="dealerRow"></div>
@@ -773,6 +773,7 @@ function schedulePlayerStep() {
 }
 
 function playerDrawCard() {
+  setPeekResult('');
   player.add(shoe.deal());
   renderCards('playerRow', player, false);
   if (player.bust()) {
@@ -983,7 +984,10 @@ function setCountdownDisplay(secondsRemaining, label) {
 }
 
 function setPeekResult(text) {
-  document.getElementById('peekResult').textContent = text;
+  const el = document.getElementById('peekResult');
+  el.textContent = text;
+  el.style.borderColor = text ? '#fff' : 'transparent';
+  el.style.background = text ? '#111' : 'transparent';
 }
 
 function toggleInfoPanel(show) {

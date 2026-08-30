@@ -215,17 +215,21 @@
   .info-section select { background: #000; color: #fff; border: 1px solid #444; font-family: inherit; font-size: 13px; padding: 4px; }
   .info-section p { color: #ccc; font-size: 12px; line-height: 1.5; margin: 0 0 8px; }
   .peek-result {
-    border: 1px solid #00E5FF;
-    background: #001a1e;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: #00E5FF;
     font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.5px;
     text-align: center;
-    padding: 10px;
-    min-height: 16px;
+    border: 1px solid transparent;
   }
-  .peek-result:empty { display: none; }
+  .peek-result.filled {
+    border-color: #00E5FF;
+    background: #001a1e;
+  }
 
   .countdown-row {
     display: flex;
@@ -868,6 +872,7 @@ function schedulePlayerStep() {
 }
 
 function playerDrawCard() {
+  setPeekResult('');
   player.add(shoe.deal());
   renderCards('playerRow', player, false);
   if (player.bust()) {
@@ -1105,7 +1110,9 @@ function setCountdownDisplay(secondsRemaining, label) {
 }
 
 function setPeekResult(text) {
-  document.getElementById('peekResult').textContent = text;
+  const el = document.getElementById('peekResult');
+  el.textContent = text;
+  el.classList.toggle('filled', !!text);
 }
 
 function toggleInfoPanel(show) {
