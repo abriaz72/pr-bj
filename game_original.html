@@ -79,24 +79,10 @@
   .odds-box.settled { opacity: 0.4; }
   .odds-box .name { font-size: 12px; color: #666; }
   .odds-box.push .name { color: #999; }
-  .odds-box .value { font-size: 18px; font-weight: bold; margin-top: 2px; }
-  .odds-box.push .value { font-size: 15px; color: #666; }
-  .position-row {
-    display: grid;
-    grid-template-columns: 1fr 0.7fr 1fr;
-    gap: 6px;
-  }
-  .position-box {
-    border: 1px solid #eee;
-    border-radius: 8px;
-    padding: 6px 4px;
-    text-align: center;
-    font-size: 14px;
-    font-weight: bold;
-  }
-  .position-box.zero { color: #999; }
-  .position-box.positive { color: #1a7d1a; background: #eefbee; border-color: #cdeecd; }
-  .position-box.negative { color: #b3261e; background: #fdecea; border-color: #f5c6c2; }
+  .odds-box .value { font-size: 24px; font-weight: bold; margin-top: 3px; }
+  .odds-box.push .value { font-size: 19px; color: #666; }
+  .odds-box .position { font-size: 14px; font-weight: bold; margin-top: 4px; color: #1a7d1a; }
+  .odds-box .position.negative { color: #b3261e; }
   .bets-list {
     font-size: 12px;
     color: #555;
@@ -205,7 +191,7 @@
 
   <div class="margin-row" id="sessionRow" style="text-align:left;">Staked £0.00 · Returned £0.00 · Net £0.00</div>
 
-  <div id="peekResult" style="color:#555;font-size:11px;min-height:14px;"></div>
+  <div id="peekResult" style="border:1px solid #222;background:#f2f2f2;color:#222;font-size:15px;font-weight:bold;text-align:center;padding:10px;min-height:16px;border-radius:8px;"></div>
 
   <div class="cards-row" id="dealerRow">
     <div class="label" id="dealerLabel">Dealer</div>
@@ -219,21 +205,18 @@
     <div class="odds-box" id="box-dealer" onclick="select('dealer')">
       <div class="name">Dealer</div>
       <div class="value" id="odds-dealer">--</div>
+      <div class="position" id="pos-dealer">£0.00</div>
     </div>
     <div class="odds-box push" id="box-push" onclick="select('push')">
       <div class="name">Push</div>
       <div class="value" id="odds-push">--</div>
+      <div class="position" id="pos-push">£0.00</div>
     </div>
     <div class="odds-box" id="box-player" onclick="select('player')">
       <div class="name">Player</div>
       <div class="value" id="odds-player">--</div>
+      <div class="position" id="pos-player">£0.00</div>
     </div>
-  </div>
-
-  <div class="position-row">
-    <div class="position-box zero" id="pos-dealer">£0</div>
-    <div class="position-box zero" id="pos-push">£0</div>
-    <div class="position-box zero" id="pos-player">£0</div>
   </div>
 
   <div class="bets-list" id="betsList"></div>
@@ -688,6 +671,7 @@ function beginPreDealWindow() {
 
 function endHand(outcome) {
   phase = 'settled';
+  setPeekResult('');
 
   const handResult = positionFor(outcome);
 
@@ -829,6 +813,7 @@ function revealDealerAndProceed() {
 }
 
 function dealerNextCard() {
+  setPeekResult('');
   dealer.add(shoe.deal());
   renderCards('dealerRow', dealer, false);
 
@@ -950,11 +935,12 @@ function renderPositions() {
   ['dealer', 'push', 'player'].forEach(outcome => {
     const value = positionFor(outcome);
     const el = document.getElementById('pos-' + outcome);
-    el.textContent = (value >= 0 ? '+£' : '-£') + Math.abs(value).toFixed(2);
-    el.classList.remove('zero', 'positive', 'negative');
-    if (value > 0) el.classList.add('positive');
-    else if (value < 0) el.classList.add('negative');
-    else el.classList.add('zero');
+    if (value === 0) {
+      el.textContent = '£0.00';
+    } else {
+      el.textContent = (value > 0 ? '+£' : '-£') + Math.abs(value).toFixed(2);
+    }
+    el.classList.toggle('negative', value < 0);
   });
 }
 
