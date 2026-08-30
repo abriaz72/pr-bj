@@ -86,17 +86,19 @@
   .odds-box {
     background: #000;
     border: 1px solid #222;
-    padding: 12px 0;
+    height: 150px;
+    padding: 12px 4px;
     text-align: center;
     cursor: pointer;
+    overflow: hidden;
   }
   .odds-box.selected { border-color: #00E5FF; }
   .odds-box.selected .name { color: #00E5FF; }
   .odds-box.selected .value { color: #00E5FF; }
   .odds-box.settled { opacity: 0.35; }
   .odds-box .name { color: #888; font-size: 10px; margin-bottom: 3px; }
-  .odds-box .value { color: #fff; font-size: 24px; font-weight: 700; }
-  .odds-box .position { font-size: 13px; font-weight: 700; margin-top: 4px; color: #3DDC97; }
+  .odds-box .value { color: #fff; font-size: 24px; font-weight: 700; white-space: nowrap; }
+  .odds-box .position { font-size: 13px; font-weight: 700; margin-top: 4px; color: #3DDC97; white-space: nowrap; }
   .odds-box .position.negative { color: #E5484D; }
   .box-bets {
     margin-top: 6px;
@@ -151,8 +153,8 @@
 
   .controls { display: flex; gap: 8px; }
   .controls input {
-    width: 70px;
-    flex: 0 0 auto;
+    flex: 1;
+    min-width: 0;
     padding: 10px 8px;
     border: 1px solid #00E5FF44;
     background: #000;
@@ -161,7 +163,7 @@
     font-family: inherit;
   }
   .controls button {
-    flex: 0 0 50%;
+    flex: 1;
     padding: 12px 16px;
     border: 1px solid #00E5FF;
     background: #000;

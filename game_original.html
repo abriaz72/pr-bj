@@ -71,17 +71,19 @@
   .odds-box {
     border: 1px solid #ddd;
     border-radius: 10px;
+    height: 150px;
     padding: 10px 4px;
     text-align: center;
     background: #fafafa;
+    overflow: hidden;
   }
   .odds-box.selected { border: 2px solid #222; background: #fff; }
   .odds-box.settled { opacity: 0.4; }
   .odds-box .name { font-size: 12px; color: #666; }
   .odds-box.push .name { color: #999; }
-  .odds-box .value { font-size: 24px; font-weight: bold; margin-top: 3px; }
+  .odds-box .value { font-size: 24px; font-weight: bold; margin-top: 3px; white-space: nowrap; }
   .odds-box.push .value { font-size: 19px; color: #666; }
-  .odds-box .position { font-size: 14px; font-weight: bold; margin-top: 4px; color: #1a7d1a; }
+  .odds-box .position { font-size: 14px; font-weight: bold; margin-top: 4px; color: #1a7d1a; white-space: nowrap; }
   .odds-box .position.negative { color: #b3261e; }
   .bets-list {
     font-size: 12px;
@@ -150,15 +152,15 @@
     align-items: center;
   }
   .controls input {
-    width: 70px;
-    flex: 0 0 auto;
+    flex: 1;
+    min-width: 0;
     padding: 10px 8px;
     border: 1px solid #ccc;
     border-radius: 8px;
     font-size: 15px;
   }
   .controls button {
-    flex: 0 0 50%;
+    flex: 1;
     padding: 12px 16px;
     border: none;
     border-radius: 8px;
