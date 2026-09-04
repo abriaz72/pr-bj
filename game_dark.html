@@ -239,7 +239,7 @@
     <button onclick="toggleInfoPanel(false)" style="border:1px solid #fff;background:#000;color:#fff;width:26px;height:26px;border-radius:50%;font-weight:bold;">&times;</button>
   </div>
   <div style="margin-top:16px;">
-    <div style="color:#fff;font-size:10px;margin-bottom:6px;">MARGIN</div>
+    <div style="color:#fff;font-size:10px;margin-bottom:6px;">SET MARGIN</div>
     <select id="marginSelect" onchange="onMarginChange()" style="background:#000;color:#fff;border:1px solid #444;padding:4px;">
       <option value="0.02">2%</option>
       <option value="0.03">3%</option>
@@ -248,17 +248,23 @@
   </div>
   <div style="margin-top:16px;">
     <div style="color:#fff;font-size:10px;margin-bottom:6px;">TIMING (SECONDS)</div>
-    <span class="timing-input">Deal <input type="number" id="preDealSecInput" value="20" onchange="setPreDealSeconds(this.value)"></span>
-    <span class="timing-input">Other <input type="number" id="otherSecInput" value="10" onchange="setOtherSeconds(this.value)"></span>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="color:#ccc;font-size:12px;">Time between games</span>
+      <span class="timing-input">Deal <input type="number" id="preDealSecInput" value="20" onchange="setPreDealSeconds(this.value)"></span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="color:#ccc;font-size:12px;">Time for in game actions</span>
+      <span class="timing-input">Other <input type="number" id="otherSecInput" value="10" onchange="setOtherSeconds(this.value)"></span>
+    </div>
   </div>
   <div style="margin-top:16px;color:#ccc;font-size:12px;line-height:1.5;">
-    <div style="color:#fff;font-size:10px;margin-bottom:6px;">HOW THE ENGINE PLAYS</div>
-    <p>Every hand is dealt from a real 8-deck shoe. The engine plays the player's hand automatically using basic strategy, and the dealer hits on soft 17, stands on hard 17 and above.</p>
-    <p>If the dealer's up-card is an Ace or a ten-value card, the dealer checks the hidden card for blackjack before play continues.</p>
-    <div style="color:#fff;font-size:10px;margin:12px 0 6px;">NO SPLITTING</div>
-    <p>A pair is not played as two hands. It's scored as its ordinary total and played through the same rules as any other hand.</p>
-    <div style="color:#fff;font-size:10px;margin:12px 0 6px;">NO DOUBLING</div>
-    <p>Where basic strategy would normally double the stake, the engine simply takes one card instead, at no extra cost.</p>
+    <div style="color:#fff;font-size:10px;margin-bottom:6px;">HOW IT WORKS</div>
+    <p>The game runs continuously playing to specific rules. Cards are dealt as a normal blackjack hand, with two for player and two for dealer, one of which is facedown. If dealer shows A or 10, there will be a check for blackjack. Player's cards are dealt using basic strategy, with two differences. There are no splits or doubles — the hard total of the two cards determines the next action (eg 8,8 v 6 is a stand, 8,8 v 7 takes a card).</p>
+  </div>
+  <div style="margin-top:16px;color:#ccc;font-size:12px;line-height:1.5;">
+    <div style="color:#fff;font-size:10px;margin-bottom:6px;">HOW TO PLAY</div>
+    <p>The user will be able to bet on any outcome during any of the betting windows. The betting windows take place pre game and at every point where action takes place (in this demo mode, those windows can be set via the time boxes above.) Once a bet is placed, a cashout option will appear after every card is dealt. The user will also be able to bet on any other outcome at any time there is a live market.</p>
+    <p>User can use pre set bet sizes or choose their own amount. Session p/l is tracked above for reference.</p>
   </div>
 </div>
 
