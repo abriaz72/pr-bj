@@ -171,6 +171,19 @@
   .run-row button.running { background: #fff; color: #000; }
   .timing-input input { width: 34px; background: #000; color: #fff; border: 1px solid #444; font-family: inherit; font-size: 11px; padding: 2px; }
   .countdown-row { display: flex; justify-content: space-between; align-items: center; border: 1px solid #fff; padding: 13px; font-size: 14px; font-weight: 700; color: #fff; }
+
+  .info-dots { display: flex; justify-content: center; gap: 6px; padding-bottom: 10px; }
+  .info-dots .dot { width: 6px; height: 6px; border-radius: 50%; background: #333; }
+  .info-dots .dot.active { background: #fff; }
+  .info-pages { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; flex: 1; -webkit-overflow-scrolling: touch; }
+  .info-page { flex: 0 0 100%; scroll-snap-align: start; overflow-y: auto; }
+  .strategy-table { width: 100%; border-collapse: collapse; font-size: 10px; text-align: center; margin-bottom: 14px; }
+  .strategy-table th { color: #fff; font-weight: 500; padding-bottom: 4px; }
+  .strategy-table td { padding: 4px 2px; color: #888; }
+  .strategy-table td.h { background: #2a0a0a; color: #E5484D; font-weight: 700; }
+  .strategy-table td.s { background: #0a2a15; color: #3DDC97; font-weight: 700; }
+  .strategy-key { display: flex; gap: 16px; font-size: 11px; color: #ccc; margin-bottom: 14px; }
+  .strategy-key span { color: #fff; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -234,37 +247,79 @@
 </div>
 
 <div class="screen" id="infoScreen" style="display:none;">
-  <div class="top-row" style="display:flex;justify-content:space-between;align-items:center;">
+  <div class="top-row" style="display:flex;justify-content:space-between;align-items:center;padding:0 0 8px;">
     <span style="color:#fff;font-size:11px;">SETTINGS &amp; RULES</span>
     <button onclick="toggleInfoPanel(false)" style="border:1px solid #fff;background:#000;color:#fff;width:26px;height:26px;border-radius:50%;font-weight:bold;">&times;</button>
   </div>
-  <div style="margin-top:16px;">
-    <div style="color:#fff;font-size:10px;margin-bottom:6px;">SET MARGIN</div>
-    <select id="marginSelect" onchange="onMarginChange()" style="background:#000;color:#fff;border:1px solid #444;padding:4px;">
-      <option value="0.02">2%</option>
-      <option value="0.03">3%</option>
-      <option value="0.05" selected>5%</option>
-    </select>
+  <div class="info-dots">
+    <div class="dot active" id="infoDot0"></div>
+    <div class="dot" id="infoDot1"></div>
   </div>
-  <div style="margin-top:16px;">
-    <div style="color:#fff;font-size:10px;margin-bottom:6px;">TIMING (SECONDS)</div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <span style="color:#ccc;font-size:12px;">Time between games</span>
-      <span class="timing-input">Deal <input type="number" id="preDealSecInput" value="20" onchange="setPreDealSeconds(this.value)"></span>
+  <div class="info-pages" id="infoPages" onscroll="onInfoPagesScroll()">
+    <div class="info-page">
+      <div style="margin-top:16px;">
+        <div style="color:#fff;font-size:10px;margin-bottom:6px;">SET MARGIN</div>
+        <select id="marginSelect" onchange="onMarginChange()" style="background:#000;color:#fff;border:1px solid #444;padding:4px;">
+          <option value="0.02">2%</option>
+          <option value="0.03">3%</option>
+          <option value="0.05" selected>5%</option>
+        </select>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="color:#fff;font-size:10px;margin-bottom:6px;">TIMING (SECONDS)</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="color:#ccc;font-size:12px;">Time between games</span>
+          <span class="timing-input">Deal <input type="number" id="preDealSecInput" value="20" onchange="setPreDealSeconds(this.value)"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="color:#ccc;font-size:12px;">Time for in game actions</span>
+          <span class="timing-input">Other <input type="number" id="otherSecInput" value="10" onchange="setOtherSeconds(this.value)"></span>
+        </div>
+      </div>
+      <div style="margin-top:16px;color:#ccc;font-size:12px;line-height:1.5;">
+        <div style="color:#fff;font-size:10px;margin-bottom:6px;">HOW IT WORKS</div>
+        <p>The game runs continuously playing to specific rules. Cards are dealt as a normal blackjack hand, with two for player and two for dealer, one of which is facedown. If dealer shows A or 10, there will be a check for blackjack. Player's cards are dealt using basic strategy, with two differences. There are no splits or doubles — the hard total of the two cards determines the next action (eg 8,8 v 6 is a stand, 8,8 v 7 takes a card).</p>
+      </div>
+      <div style="margin-top:16px;color:#ccc;font-size:12px;line-height:1.5;">
+        <div style="color:#fff;font-size:10px;margin-bottom:6px;">HOW TO PLAY</div>
+        <p>The user will be able to bet on any outcome during any of the betting windows. The betting windows take place pre game and at every point where action takes place (in this demo mode, those windows can be set via the time boxes above.) Once a bet is placed, a cashout option will appear after every card is dealt. The user will also be able to bet on any other outcome at any time there is a live market.</p>
+        <p>User can use pre set bet sizes or choose their own amount. Session p/l is tracked above for reference.</p>
+      </div>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <span style="color:#ccc;font-size:12px;">Time for in game actions</span>
-      <span class="timing-input">Other <input type="number" id="otherSecInput" value="10" onchange="setOtherSeconds(this.value)"></span>
+
+    <div class="info-page">
+      <div style="margin-top:16px;color:#ccc;font-size:12px;line-height:1.5;">
+        <div style="color:#fff;font-size:10px;margin-bottom:6px;">DEALER RULES</div>
+        <p>Hits on soft 17, stands on hard 17 and above. Checks the hidden card for blackjack whenever the up-card is an Ace or a ten-value card.</p>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="color:#fff;font-size:10px;margin-bottom:6px;">KEY</div>
+        <div class="strategy-key"><span>H</span> = Hit &nbsp; <span>S</span> = Stand</div>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="color:#fff;font-size:10px;margin-bottom:6px;">HARD TOTALS</div>
+        <table class="strategy-table">
+          <tr><th></th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>A</th></tr>
+          <tr><td>4-11</td><td colspan="10" class="h">H (always)</td></tr>
+          <tr><td>12</td><td class="h">H</td><td class="h">H</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="h">H</td><td class="h">H</td><td class="h">H</td><td class="h">H</td><td class="h">H</td></tr>
+          <tr><td>13</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="h">H</td><td class="h">H</td><td class="h">H</td><td class="h">H</td><td class="h">H</td></tr>
+          <tr><td>14</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="h">H</td><td class="h">H</td><td class="h">H</td><td class="h">H</td><td class="h">H</td></tr>
+          <tr><td>15</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="h">H</td><td class="h">H</td><td class="h">H</td><td class="h">H</td><td class="h">H</td></tr>
+          <tr><td>16</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="h">H</td><td class="h">H</td><td class="h">H</td><td class="h">H</td><td class="h">H</td></tr>
+          <tr><td>17+</td><td colspan="10" class="s">S (always)</td></tr>
+        </table>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="color:#fff;font-size:10px;margin-bottom:6px;">SOFT TOTALS (CONTAINS AN ACE)</div>
+        <table class="strategy-table">
+          <tr><th></th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>A</th></tr>
+          <tr><td>12-17</td><td colspan="10" class="h">H (always)</td></tr>
+          <tr><td>18</td><td class="h">H</td><td class="h">H</td><td class="h">H</td><td class="h">H</td><td class="h">H</td><td class="s">S</td><td class="s">S</td><td class="h">H</td><td class="h">H</td><td class="h">H</td></tr>
+          <tr><td>19</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="h">H</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="s">S</td><td class="s">S</td></tr>
+          <tr><td>20+</td><td colspan="10" class="s">S (always)</td></tr>
+        </table>
+      </div>
     </div>
-  </div>
-  <div style="margin-top:16px;color:#ccc;font-size:12px;line-height:1.5;">
-    <div style="color:#fff;font-size:10px;margin-bottom:6px;">HOW IT WORKS</div>
-    <p>The game runs continuously playing to specific rules. Cards are dealt as a normal blackjack hand, with two for player and two for dealer, one of which is facedown. If dealer shows A or 10, there will be a check for blackjack. Player's cards are dealt using basic strategy, with two differences. There are no splits or doubles — the hard total of the two cards determines the next action (eg 8,8 v 6 is a stand, 8,8 v 7 takes a card).</p>
-  </div>
-  <div style="margin-top:16px;color:#ccc;font-size:12px;line-height:1.5;">
-    <div style="color:#fff;font-size:10px;margin-bottom:6px;">HOW TO PLAY</div>
-    <p>The user will be able to bet on any outcome during any of the betting windows. The betting windows take place pre game and at every point where action takes place (in this demo mode, those windows can be set via the time boxes above.) Once a bet is placed, a cashout option will appear after every card is dealt. The user will also be able to bet on any other outcome at any time there is a live market.</p>
-    <p>User can use pre set bet sizes or choose their own amount. Session p/l is tracked above for reference.</p>
   </div>
 </div>
 
@@ -1008,6 +1063,19 @@ function setPeekResult(text) {
 function toggleInfoPanel(show) {
   document.getElementById('mainScreen').style.display = show ? 'none' : 'flex';
   document.getElementById('infoScreen').style.display = show ? 'flex' : 'none';
+  if (show) {
+    const pages = document.getElementById('infoPages');
+    pages.scrollLeft = 0;
+    document.getElementById('infoDot0').classList.add('active');
+    document.getElementById('infoDot1').classList.remove('active');
+  }
+}
+
+function onInfoPagesScroll() {
+  const pages = document.getElementById('infoPages');
+  const onPage2 = pages.scrollLeft > pages.clientWidth / 2;
+  document.getElementById('infoDot0').classList.toggle('active', !onPage2);
+  document.getElementById('infoDot1').classList.toggle('active', onPage2);
 }
 
 function setRunningState(running) {
