@@ -273,7 +273,7 @@
     font-weight: 700;
     letter-spacing: 0.5px;
     text-align: center;
-    border: 1px solid transparent;
+    border: 1px solid #00E5FF33;
   }
   .peek-result.filled {
     border-color: #00E5FF;
@@ -850,8 +850,11 @@ function setOtherSeconds(value) {
 
 /* ---------- Pure calculations ---------- */
 
+const MAIN_MARKET_OUTCOMES = new Set(['dealer', 'push', 'player']);
+
 function positionFor(outcome) {
   return bets.reduce((total, b) => {
+    if (!MAIN_MARKET_OUTCOMES.has(b.outcome)) return total; // side bets never affect this
     if (b.outcome === outcome) return total + b.stake * (b.odds - 1);
     return total - b.stake;
   }, 0);
