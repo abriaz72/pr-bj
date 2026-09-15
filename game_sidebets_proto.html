@@ -27,7 +27,7 @@
     padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 5px;
     overflow: hidden;
     font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
   }
@@ -105,15 +105,13 @@
   .sidebet-box {
     border: 1px solid #00E5FF33;
     background: #000;
-    padding: 8px 6px;
+    padding: 6px;
+    cursor: pointer;
   }
-  .sidebet-box .name { color: #00E5FF; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px; text-align: center; }
-  .sidebet-option { display: flex; justify-content: space-between; padding: 4px 2px; cursor: pointer; border-bottom: 1px solid #111; }
-  .sidebet-option.selected { background: #001a1e; }
-  .sidebet-option .opt-label { color: #ccc; font-size: 10px; }
-  .sidebet-option .opt-odds { color: #fff; font-size: 10px; font-weight: 700; }
-  .sidebet-option.selected .opt-label, .sidebet-option.selected .opt-odds { color: #00E5FF; }
-  .staked-amount { font-size: 9px; color: #3DDC97; text-align: right; padding: 1px 2px 2px; min-height: 11px; }
+  .sidebet-box.selected { border-color: #00E5FF; background: #001a1e; }
+  .sidebet-box .name { color: #00E5FF; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 3px; text-align: center; }
+  .sidebet-box .tier-line { color: #888; font-size: 8px; line-height: 1.3; text-align: center; }
+  .sidebet-box .staked-amount { color: #E5484D; font-size: 10px; font-weight: 700; text-align: center; margin-top: 4px; min-height: 12px; }
 
 
   .cashout-section { display: flex; flex-direction: column; gap: 4px; }
@@ -135,8 +133,8 @@
     text-align: center;
     font-size: 14px;
     font-weight: 700;
-    padding: 8px;
-    min-height: 16px;
+    padding: 4px;
+    min-height: 10px;
     color: #fff;
     border: 1px solid transparent;
   }
@@ -327,43 +325,16 @@
   <div class="hand-row" id="playerRow"></div>
 
   <div class="sidebet-row">
-    <div class="sidebet-box">
+    <div class="sidebet-box" id="box-perfect_pairs" onclick="select('perfect_pairs')">
       <div class="name">PERFECT PAIRS</div>
-      <div class="sidebet-option" id="box-pp_mixed" onclick="select('pp_mixed')">
-        <span class="opt-label">Mixed pair</span><span class="opt-odds">5/1</span>
-      </div>
-      <div class="staked-amount" id="staked-pp_mixed"></div>
-      <div class="sidebet-option" id="box-pp_coloured" onclick="select('pp_coloured')">
-        <span class="opt-label">Coloured pair</span><span class="opt-odds">10/1</span>
-      </div>
-      <div class="staked-amount" id="staked-pp_coloured"></div>
-      <div class="sidebet-option" id="box-pp_perfect" onclick="select('pp_perfect')">
-        <span class="opt-label">Perfect pair</span><span class="opt-odds">25/1</span>
-      </div>
-      <div class="staked-amount" id="staked-pp_perfect"></div>
+      <div class="tier-line">Mixed 5/1 &middot; Coloured 10/1 &middot; Perfect 25/1</div>
+      <div class="staked-amount" id="staked-perfect_pairs"></div>
     </div>
-    <div class="sidebet-box">
+    <div class="sidebet-box" id="box-two1plus3" onclick="select('two1plus3')">
       <div class="name">21+3</div>
-      <div class="sidebet-option" id="box-tri_flush" onclick="select('tri_flush')">
-        <span class="opt-label">Flush</span><span class="opt-odds">5/1</span>
-      </div>
-      <div class="staked-amount" id="staked-tri_flush"></div>
-      <div class="sidebet-option" id="box-tri_straight" onclick="select('tri_straight')">
-        <span class="opt-label">Straight</span><span class="opt-odds">10/1</span>
-      </div>
-      <div class="staked-amount" id="staked-tri_straight"></div>
-      <div class="sidebet-option" id="box-tri_trips" onclick="select('tri_trips')">
-        <span class="opt-label">3 of a kind</span><span class="opt-odds">30/1</span>
-      </div>
-      <div class="staked-amount" id="staked-tri_trips"></div>
-      <div class="sidebet-option" id="box-tri_straightflush" onclick="select('tri_straightflush')">
-        <span class="opt-label">Straight flush</span><span class="opt-odds">40/1</span>
-      </div>
-      <div class="staked-amount" id="staked-tri_straightflush"></div>
-      <div class="sidebet-option" id="box-tri_suitedtrips" onclick="select('tri_suitedtrips')">
-        <span class="opt-label">Suited 3oak</span><span class="opt-odds">100/1</span>
-      </div>
-      <div class="staked-amount" id="staked-tri_suitedtrips"></div>
+      <div class="tier-line">Flush 5/1 &middot; Straight 10/1 &middot; Trips 30/1</div>
+      <div class="tier-line">Str. flush 40/1 &middot; Suited 3oak 100/1</div>
+      <div class="staked-amount" id="staked-two1plus3"></div>
     </div>
   </div>
 
@@ -1137,18 +1108,14 @@ function renderCards(rowId, hand, hideSecond) {
   }
 }
 
-// Fixed, pre-agreed payouts (not derived from our own probability model) --
-// standard industry Perfect Pairs / 21+3 paytables. Decimal odds here are
-// fractional+1 (e.g. 5/1 -> 6.0).
+// These are flat bets, not per-tier selections -- the user just backs
+// "Perfect Pairs" or "21+3" as a whole; which specific tier (if any) it
+// pays out at is determined by the actual cards once settlement exists.
+// These placeholder values exist only so placeBet() has a truthy price
+// to accept the stake with -- they are never shown or used for payout.
 const SIDE_BET_PAYOUTS = {
-  pp_mixed: 6.0,
-  pp_coloured: 11.0,
-  pp_perfect: 26.0,
-  tri_flush: 6.0,
-  tri_straight: 11.0,
-  tri_trips: 31.0,
-  tri_straightflush: 41.0,
-  tri_suitedtrips: 101.0,
+  perfect_pairs: 1,
+  two1plus3: 1,
 };
 
 function setOddsDisplay(odds) {
@@ -1181,19 +1148,20 @@ function setOddsSettled(isSettled) {
 }
 
 function highlightSelected(outcome) {
-  document.querySelectorAll('.odds-box, .sidebet-option').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('.odds-box, .sidebet-box').forEach(el => el.classList.remove('selected'));
   if (outcome) document.getElementById('box-' + outcome).classList.add('selected');
 }
 
 function renderBets() {
   // Main-market bets are intentionally not itemised here (removed to
-  // free up space for side bets). Side-bet stakes ARE shown, next to
-  // the specific option they were placed on.
+  // free up space for side bets). Each side bet shows a single total
+  // staked figure, not a per-tier breakdown -- the specific tier is
+  // decided at settlement (not yet built), not at bet placement.
   Object.keys(SIDE_BET_PAYOUTS).forEach(key => {
     const el = document.getElementById('staked-' + key);
     const matching = bets.filter(b => b.outcome === key);
     const total = matching.reduce((sum, b) => sum + b.stake, 0);
-    el.textContent = total > 0 ? `£${total.toFixed(2)} staked` : '';
+    el.textContent = total > 0 ? `-£${total.toFixed(2)}` : '';
   });
 }
 
