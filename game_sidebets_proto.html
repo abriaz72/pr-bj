@@ -31,6 +31,12 @@
     overflow: hidden;
     font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
   }
+  /* Safari can silently shrink flex children below their set height even
+     with an explicit height/min-height -- this blanket rule stops every
+     fixed-size section from being compressed. The spacer is deliberately
+     excluded since absorbing extra/short space is its actual job. */
+  #mainScreen > *:not(.spacer) { flex-shrink: 0; }
+
   .margin-row { font-size: 11px; color: #888; text-align: right; }
   .margin-row select { font-size: 11px; background: #000; color: #fff; border: 1px solid #444; }
   .session-row { font-size: 11px; color: #888; text-align: left; }
@@ -39,6 +45,7 @@
   .hand-row {
     position: relative;
     display: flex;
+    flex-shrink: 0;
     gap: 6px;
     padding-top: 12px;
     margin-bottom: 8px;
@@ -80,6 +87,7 @@
 
   .odds-row {
     display: grid;
+    flex-shrink: 0;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 6px;
   }
@@ -101,7 +109,7 @@
   .odds-box .position { font-size: 12px; font-weight: 700; margin-top: 4px; color: #3DDC97; white-space: nowrap; }
   .odds-box .position.negative { color: #E5484D; }
 
-  .sidebet-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .sidebet-row { display: grid; flex-shrink: 0; grid-template-columns: 1fr 1fr; gap: 6px; }
   .sidebet-box {
     border: 1px solid #00E5FF33;
     background: #000;
@@ -116,7 +124,7 @@
   .sidebet-box.locked { opacity: 0.4; cursor: default; }
 
 
-  .cashout-section { display: flex; flex-direction: column; gap: 4px; min-height: 130px; }
+  .cashout-section { display: flex; flex-direction: column; flex-shrink: 0; gap: 4px; min-height: 130px; }
   .cashout-row {
     display: flex;
     align-items: center;
@@ -136,6 +144,7 @@
     font-size: 14px;
     font-weight: 700;
     height: 22px;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -265,6 +274,7 @@
   .timing-row span:first-child { color: #ccc; font-size: 12px; margin-right: 10px; }
   .peek-result {
     height: 44px;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -282,6 +292,7 @@
 
   .countdown-row {
     display: flex;
+    flex-shrink: 0;
     justify-content: space-between;
     align-items: center;
     border: 1px solid #00E5FF;
