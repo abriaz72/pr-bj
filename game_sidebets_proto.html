@@ -343,13 +343,13 @@
 
   <div class="sidebet-row">
     <div class="sidebet-box" id="box-perfect_pairs" onclick="select('perfect_pairs')">
-      <div class="name">PERFECT PAIRS</div>
-      <div class="tier-line">Mixed 5/1 &middot; Coloured 10/1 &middot; Perfect 25/1</div>
+      <div class="name" id="name-perfect_pairs">PERFECT PAIRS</div>
+      <div class="tier-line" id="tier-perfect_pairs">Mixed 5/1 &middot; Coloured 10/1 &middot; Perfect 25/1</div>
       <div class="staked-amount" id="staked-perfect_pairs"></div>
     </div>
     <div class="sidebet-box" id="box-two1plus3" onclick="select('two1plus3')">
-      <div class="name">21+3</div>
-      <div class="tier-line">Flush 5/1 &middot; Straight 10/1 &middot; Trips 30/1 &middot; Str.flush 40/1 &middot; Suited 100/1</div>
+      <div class="name" id="name-two1plus3">21+3</div>
+      <div class="tier-line" id="tier-two1plus3">Flush 5/1 &middot; Straight 10/1 &middot; Trips 30/1 &middot; Str.flush 40/1 &middot; Suited 100/1</div>
       <div class="staked-amount" id="staked-two1plus3"></div>
     </div>
   </div>
@@ -494,6 +494,8 @@
      showResult(outcome, amount) -- outcome may be null (clear banner)
      setCountdownDisplay(secondsRemaining, label)
      setPeekResult(text) -- text may be '' to clear it
+     blankSideBetContent() -- OPTIONAL, only relevant to skins with side
+       bets; core.js checks it exists before calling it
      renderPresets()
      highlightSelected(outcome) -- outcome may be null (clear all)
      setRunningState(isRunning)
@@ -956,10 +958,10 @@ function resetHandDisplay() {
   highlightSelected(null);
   renderCashoutOptions();
   setOddsSettled(false);
-  renderBets();
-  renderPositions();
   clearMessageQueue();
   sideBetResults = { perfect_pairs: null, two1plus3: null };
+  renderBets();
+  renderPositions();
   setOddsDisplay(preDealOdds());
 }
 
@@ -1096,6 +1098,8 @@ function checkDealerBlackjack() {
 }
 
 function proceedAfterPeek() {
+  if (typeof blankSideBetContent === 'function') blankSideBetContent();
+
   if (player.blackjack()) {
     renderCards('dealerRow', dealer, false);
     endHand('player');
@@ -1322,10 +1326,32 @@ function renderBets() {
   });
 }
 
+const SIDE_BET_LABELS = {
+  perfect_pairs: { name: 'PERFECT PAIRS', tier: "Mixed 5/1 &middot; Coloured 10/1 &middot; Perfect 25/1" },
+  two1plus3: { name: '21+3', tier: "Flush 5/1 &middot; Straight 10/1 &middot; Trips 30/1 &middot; Str.flush 40/1 &middot; Suited 100/1" },
+};
+
 function updateSideBetLockState() {
   const locked = phase !== 'pre_deal';
   ['perfect_pairs', 'two1plus3'].forEach(key => {
     document.getElementById('box-' + key).classList.toggle('locked', locked);
+    if (!locked) {
+      // Fresh hand -- restore the labels for the next round of betting.
+      document.getElementById('name-' + key).textContent = SIDE_BET_LABELS[key].name;
+      document.getElementById('tier-' + key).innerHTML = SIDE_BET_LABELS[key].tier;
+    }
+  });
+}
+
+// Called once the peek has resolved (or been confirmed unnecessary) --
+// the side-bet result has had its natural visible window by this point,
+// and the box goes blank (same size, same position) ready to later hold
+// next-card/last-card betting instead.
+function blankSideBetContent() {
+  ['perfect_pairs', 'two1plus3'].forEach(key => {
+    document.getElementById('name-' + key).textContent = '';
+    document.getElementById('tier-' + key).innerHTML = '';
+    document.getElementById('staked-' + key).textContent = '';
   });
 }
 
