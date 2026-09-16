@@ -1459,7 +1459,10 @@ function blankSideBetContent() {
   ['perfect_pairs', 'two1plus3'].forEach(key => {
     document.getElementById('name-' + key).textContent = '';
     document.getElementById('tier-' + key).innerHTML = '';
-    document.getElementById('staked-' + key).textContent = '';
+    // Deliberately NOT clearing staked-amount here -- the win/loss
+    // figure needs to actually be seen. It persists until a genuinely
+    // new hand starts (resetHandDisplay), not wiped the instant the
+    // label blanks.
   });
 }
 
