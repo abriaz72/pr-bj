@@ -352,6 +352,11 @@
       <div class="tier-line" id="tier-two1plus3">Flush 5/1 &middot; Straight 10/1 &middot; Trips 30/1 &middot; Str.flush 40/1 &middot; Suited 100/1</div>
       <div class="staked-amount" id="staked-two1plus3"></div>
     </div>
+    <div class="sidebet-box" id="box-dealer_next_card" onclick="select('dealer_next_card')" style="grid-column:1 / -1;display:none;">
+      <div class="name">DEALER'S NEXT CARD</div>
+      <div class="tier-line" id="tier-dealer_next_card"></div>
+      <div class="staked-amount" id="staked-dealer_next_card"></div>
+    </div>
   </div>
 
   <div class="odds-row">
@@ -960,6 +965,10 @@ function resetHandDisplay() {
   setOddsSettled(false);
   clearMessageQueue();
   sideBetResults = { perfect_pairs: null, two1plus3: null };
+  dealerNextCardTarget = null;
+  currentOdds.dealer_next_card = null;
+  if (typeof setDealerNextCardBox === 'function') setDealerNextCardBox(null);
+  if (typeof setDealerNextCardResult === 'function') setDealerNextCardResult(null);
   renderBets();
   renderPositions();
   setOddsDisplay(preDealOdds());
@@ -1037,6 +1046,67 @@ function settleSideBets() {
     renderSession();
     renderBets();
   }
+}
+
+/* ---------- Dealer's next card market ----------
+   Appears only during an actual dealer draw, when the dealer's current
+   total is such that exactly one card would complete it to 21 (totals
+   11-16, or exactly soft 17 -- hard 17+ never qualifies, since no card
+   is ever coming). Unlike Perfect Pairs/21+3, this uses real
+   probability and respects the margin selector, same as the main
+   market -- it isn't a fixed real-world payout. */
+
+let dealerNextCardTarget = null; // { rankLabel, value, payout } or null
+
+function computeDealerNextCardTarget(total, soft) {
+  const margin = getCurrentMargin();
+  if (total >= 11 && total <= 16) {
+    const neededValue = 21 - total;
+    if (neededValue === 10) {
+      return { rankLabel: 'TEN', value: 10, payout: oddsFromProbability(4 / 13, margin) };
+    }
+    return { rankLabel: String(neededValue), value: neededValue, payout: oddsFromProbability(1 / 13, margin) };
+  }
+  if (total === 17 && soft) {
+    return { rankLabel: '4', value: 4, payout: oddsFromProbability(1 / 13, margin) };
+  }
+  return null;
+}
+
+// Called right before each "Dealer draws in..." countdown -- shows the
+// target for the card that's about to be drawn, or clears the market
+// if the current total doesn't qualify.
+function updateDealerNextCardMarket(total, soft) {
+  dealerNextCardTarget = computeDealerNextCardTarget(total, soft);
+  currentOdds.dealer_next_card = dealerNextCardTarget ? dealerNextCardTarget.payout : null;
+  if (typeof setDealerNextCardBox === 'function') setDealerNextCardBox(dealerNextCardTarget);
+}
+
+// Settles any bet against the target that was showing during the
+// countdown that just expired -- called with the card that was just
+// drawn, before anything else about that card is processed.
+function settleDealerNextCard(drawnCard) {
+  const bet = bets.find(b => b.outcome === 'dealer_next_card');
+  const target = dealerNextCardTarget;
+  dealerNextCardTarget = null;
+  currentOdds.dealer_next_card = null;
+  if (typeof setDealerNextCardBox === 'function') setDealerNextCardBox(null);
+  if (!bet || !target) return;
+  bets = bets.filter(b => b.outcome !== 'dealer_next_card');
+
+  const matched = target.value === 10
+    ? drawnCard.value() === 10
+    : drawnCard.rank === target.rankLabel;
+
+  if (matched) {
+    const amount = bet.stake * target.payout;
+    sessionReturned += amount;
+    queueMessage(`Player wins Dealer's Next Card - £${amount.toFixed(2)}`);
+    if (typeof setDealerNextCardResult === 'function') setDealerNextCardResult({ won: true, amount });
+  } else {
+    if (typeof setDealerNextCardResult === 'function') setDealerNextCardResult({ won: false, amount: bet.stake });
+  }
+  renderSession();
 }
 
 function startDeal() {
@@ -1154,12 +1224,15 @@ function revealDealerAndProceed() {
 
   setOddsDisplay(dealerPhaseOdds(dTotal, dSoft, playerFinalTotal));
   phase = 'dealer_turn';
+  updateDealerNextCardMarket(dTotal, dSoft);
   scheduleNext('other', 'Dealer draws in', dealerNextCard);
 }
 
 function dealerNextCard() {
   clearMessageQueue();
-  dealer.add(shoe.deal());
+  const drawnCard = shoe.deal();
+  settleDealerNextCard(drawnCard);
+  dealer.add(drawnCard);
   renderCards('dealerRow', dealer, false);
 
   const [playerFinalTotal] = player.totalAndSoft();
@@ -1176,6 +1249,7 @@ function dealerNextCard() {
   }
 
   setOddsDisplay(dealerPhaseOdds(dTotal, dSoft, playerFinalTotal));
+  updateDealerNextCardMarket(dTotal, dSoft);
   scheduleNext('other', 'Dealer draws in', dealerNextCard);
 }
 
@@ -1304,6 +1378,40 @@ function setOddsSettled(isSettled) {
 function highlightSelected(outcome) {
   document.querySelectorAll('.odds-box, .sidebet-box').forEach(el => el.classList.remove('selected'));
   if (outcome) document.getElementById('box-' + outcome).classList.add('selected');
+}
+
+// When a target is showing, this box takes over the full row (PP/21+3
+// hidden, not just blanked, to avoid a second grid row appearing).
+// When null, PP/21+3 get their space back -- their own content is
+// managed separately by blankSideBetContent/updateSideBetLockState,
+// so this only ever toggles visibility, never text.
+function setDealerNextCardBox(target) {
+  const ppBox = document.getElementById('box-perfect_pairs');
+  const triBox = document.getElementById('box-two1plus3');
+  const dncBox = document.getElementById('box-dealer_next_card');
+  if (target) {
+    ppBox.style.display = 'none';
+    triBox.style.display = 'none';
+    dncBox.style.display = 'block';
+    document.getElementById('tier-dealer_next_card').textContent =
+      `Target: ${target.rankLabel} @ ${target.payout.toFixed(2)}`;
+  } else {
+    dncBox.style.display = 'none';
+    ppBox.style.display = '';
+    triBox.style.display = '';
+  }
+}
+
+function setDealerNextCardResult(result) {
+  const el = document.getElementById('staked-dealer_next_card');
+  if (!result) { el.textContent = ''; el.classList.remove('won'); return; }
+  if (result.won) {
+    el.textContent = `+£${result.amount.toFixed(2)}`;
+    el.classList.add('won');
+  } else {
+    el.textContent = `-£${result.amount.toFixed(2)}`;
+    el.classList.remove('won');
+  }
 }
 
 function renderBets() {
