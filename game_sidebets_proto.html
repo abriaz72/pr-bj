@@ -223,6 +223,21 @@
     justify-content: space-between;
     align-items: center;
   }
+  .history-strip { display: flex; gap: 3px; overflow: hidden; }
+  .history-badge {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 18px;
+    border-radius: 3px;
+    background: #111;
+    color: #888;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .history-badge.latest { background: #E5484D; color: #fff; }
   .info-btn {
     border: 1px solid #00E5FF;
     background: #000;
@@ -326,6 +341,7 @@
     <div class="run-row">
       <button id="runBtn" onclick="toggleRunning()">START</button>
     </div>
+    <div class="history-strip" id="historyStrip"></div>
     <button class="info-btn" onclick="toggleInfoPanel(true)">i</button>
   </div>
 
@@ -501,6 +517,8 @@
      setPeekResult(text) -- text may be '' to clear it
      blankSideBetContent() -- OPTIONAL, only relevant to skins with side
        bets; core.js checks it exists before calling it
+     renderHandHistory(history) -- OPTIONAL, array of outcome strings
+       ('dealer'/'push'/'player'), most recent first, max 8 entries
      renderPresets()
      highlightSelected(outcome) -- outcome may be null (clear all)
      setRunningState(isRunning)
@@ -981,9 +999,19 @@ function beginPreDealWindow() {
   scheduleNext('preDeal', 'Place your bets', startDeal);
 }
 
+let handHistory = []; // most recent first, max 8: 'player' | 'dealer' | 'push'
+
+function pushHandHistory(outcome) {
+  if (!MAIN_MARKET_OUTCOMES.has(outcome)) return;
+  handHistory.unshift(outcome);
+  if (handHistory.length > 8) handHistory.length = 8;
+  if (typeof renderHandHistory === 'function') renderHandHistory(handHistory);
+}
+
 function endHand(outcome) {
   phase = 'settled';
   clearMessageQueue();
+  pushHandHistory(outcome);
 
   const handResult = positionFor(outcome);
 
@@ -1412,6 +1440,15 @@ function setDealerNextCardResult(result) {
     el.textContent = `-£${result.amount.toFixed(2)}`;
     el.classList.remove('won');
   }
+}
+
+const HISTORY_LABELS = { player: 'PL', dealer: 'D', push: 'PU' };
+
+function renderHandHistory(history) {
+  const el = document.getElementById('historyStrip');
+  el.innerHTML = history.map((outcome, i) =>
+    `<div class="history-badge${i === 0 ? ' latest' : ''}">${HISTORY_LABELS[outcome]}</div>`
+  ).join('');
 }
 
 function renderBets() {
