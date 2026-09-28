@@ -122,6 +122,14 @@
   .sidebet-box .staked-amount { color: #E5484D; font-size: 10px; font-weight: 700; text-align: center; margin-top: 4px; min-height: 12px; }
   .sidebet-box .staked-amount.won { color: #3DDC97; }
   .sidebet-box.locked { opacity: 0.4; cursor: default; }
+  #box-dealer_next_card { min-height: 76px; align-items: center; justify-content: center; }
+  .dnc-inner { display: flex; align-items: center; justify-content: center; gap: 14px; }
+  .dnc-card { width: 40px; height: 54px; }
+  .dnc-card .rank { font-size: 20px; }
+  .dnc-text { text-align: left; }
+  .dnc-text .name { text-align: left; }
+  .dnc-odds { color: #fff; font-size: 13px; font-weight: 700; margin: 2px 0; }
+  .dnc-text .staked-amount { text-align: left; margin-top: 2px; }
 
 
   .cashout-section { display: flex; flex-direction: column; flex-shrink: 0; gap: 4px; min-height: 48px; overflow-y: auto; }
@@ -369,9 +377,14 @@
       <div class="staked-amount" id="staked-two1plus3"></div>
     </div>
     <div class="sidebet-box" id="box-dealer_next_card" onclick="select('dealer_next_card')" style="grid-column:1 / -1;display:none;">
-      <div class="name">DEALER'S NEXT CARD</div>
-      <div class="tier-line" id="tier-dealer_next_card"></div>
-      <div class="staked-amount" id="staked-dealer_next_card"></div>
+      <div class="dnc-inner">
+        <div class="card dnc-card"><span class="rank" id="dnc-rank"></span></div>
+        <div class="dnc-text">
+          <div class="name">DEALER'S NEXT CARD</div>
+          <div class="dnc-odds" id="odds-dealer_next_card"></div>
+          <div class="staked-amount" id="staked-dealer_next_card"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1010,7 +1023,9 @@ function pushHandHistory(outcome) {
 
 function endHand(outcome) {
   phase = 'settled';
-  clearMessageQueue();
+  // Not clearing the message queue here: win messages and "Dealer has
+  // Blackjack" are queued right before the hand ends and must be seen.
+  // Every message expires by itself after 2 seconds anyway.
   pushHandHistory(outcome);
 
   const handResult = positionFor(outcome);
@@ -1114,27 +1129,29 @@ function updateDealerNextCardMarket(total, soft) {
 // countdown that just expired -- called with the card that was just
 // drawn, before anything else about that card is processed.
 function settleDealerNextCard(drawnCard) {
-  const bet = bets.find(b => b.outcome === 'dealer_next_card');
+  const dncBets = bets.filter(b => b.outcome === 'dealer_next_card');
   const target = dealerNextCardTarget;
   dealerNextCardTarget = null;
   currentOdds.dealer_next_card = null;
-  if (typeof setDealerNextCardBox === 'function') setDealerNextCardBox(null);
-  if (!bet || !target) return;
-  bets = bets.filter(b => b.outcome !== 'dealer_next_card');
 
-  const matched = target.value === 10
-    ? drawnCard.value() === 10
-    : drawnCard.rank === target.rankLabel;
+  if (dncBets.length && target) {
+    bets = bets.filter(b => b.outcome !== 'dealer_next_card');
+    const totalStake = dncBets.reduce((sum, b) => sum + b.stake, 0);
+    const matched = target.value === 10
+      ? drawnCard.value() === 10
+      : drawnCard.rank === target.rankLabel;
 
-  if (matched) {
-    const amount = bet.stake * target.payout;
-    sessionReturned += amount;
-    queueMessage(`Player wins Dealer's Next Card - £${amount.toFixed(2)}`);
-    if (typeof setDealerNextCardResult === 'function') setDealerNextCardResult({ won: true, amount });
-  } else {
-    if (typeof setDealerNextCardResult === 'function') setDealerNextCardResult({ won: false, amount: bet.stake });
+    if (matched) {
+      const amount = totalStake * target.payout;
+      sessionReturned += amount;
+      queueMessage(`Player wins Dealer's Next Card - £${amount.toFixed(2)}`);
+      if (typeof setDealerNextCardResult === 'function') setDealerNextCardResult({ won: true, amount });
+    } else {
+      if (typeof setDealerNextCardResult === 'function') setDealerNextCardResult({ won: false, amount: totalStake });
+    }
+    renderSession();
   }
-  renderSession();
+  if (typeof setDealerNextCardBox === 'function') setDealerNextCardBox(null);
 }
 
 function startDeal() {
@@ -1408,21 +1425,24 @@ function highlightSelected(outcome) {
   if (outcome) document.getElementById('box-' + outcome).classList.add('selected');
 }
 
-// When a target is showing, this box takes over the full row (PP/21+3
-// hidden, not just blanked, to avoid a second grid row appearing).
-// When null, PP/21+3 get their space back -- their own content is
-// managed separately by blankSideBetContent/updateSideBetLockState,
-// so this only ever toggles visibility, never text.
-function setDealerNextCardBox(target) {
+// Dealer's next card box. While a target is showing it takes over the
+// full row (PP/21+3 hidden rather than blanked, so no second grid row
+// appears). When it closes, PP/21+3 get their space back -- their own
+// content is managed separately, so this only ever toggles visibility.
+//
+// After a bet settles the box stays up for 2 seconds showing the result
+// (+£X green / -£X red) so a win or loss is actually seen, then clears.
+let dncResultShown = false;
+let dncHoldTimer = null;
+
+function showDncBox(visible) {
   const ppBox = document.getElementById('box-perfect_pairs');
   const triBox = document.getElementById('box-two1plus3');
   const dncBox = document.getElementById('box-dealer_next_card');
-  if (target) {
+  if (visible) {
     ppBox.style.display = 'none';
     triBox.style.display = 'none';
-    dncBox.style.display = 'block';
-    document.getElementById('tier-dealer_next_card').textContent =
-      `Target: ${target.rankLabel} @ ${target.payout.toFixed(2)}`;
+    dncBox.style.display = 'flex';
   } else {
     dncBox.style.display = 'none';
     ppBox.style.display = '';
@@ -1430,16 +1450,41 @@ function setDealerNextCardBox(target) {
   }
 }
 
+function cancelDncHold() {
+  if (dncHoldTimer) { clearTimeout(dncHoldTimer); dncHoldTimer = null; }
+  dncResultShown = false;
+}
+
+function setDealerNextCardBox(target) {
+  if (target) {
+    document.getElementById('dnc-rank').textContent = target.rankLabel === 'TEN' ? '10' : target.rankLabel;
+    document.getElementById('odds-dealer_next_card').textContent = `@ ${target.payout.toFixed(2)}`;
+    showDncBox(true);
+  } else if (!dncResultShown) {
+    showDncBox(false);
+  }
+}
+
 function setDealerNextCardResult(result) {
   const el = document.getElementById('staked-dealer_next_card');
-  if (!result) { el.textContent = ''; el.classList.remove('won'); return; }
-  if (result.won) {
-    el.textContent = `+£${result.amount.toFixed(2)}`;
-    el.classList.add('won');
-  } else {
-    el.textContent = `-£${result.amount.toFixed(2)}`;
+  cancelDncHold();
+  if (!result) {
+    el.textContent = '';
     el.classList.remove('won');
+    if (!dealerNextCardTarget) showDncBox(false);
+    return;
   }
+  el.textContent = result.won ? `+£${result.amount.toFixed(2)}` : `-£${result.amount.toFixed(2)}`;
+  el.classList.toggle('won', result.won);
+  dncResultShown = true;
+  showDncBox(true);
+  dncHoldTimer = setTimeout(() => {
+    dncHoldTimer = null;
+    dncResultShown = false;
+    el.textContent = '';
+    el.classList.remove('won');
+    if (!dealerNextCardTarget) showDncBox(false);
+  }, 2000);
 }
 
 const HISTORY_LABELS = { player: 'PL', dealer: 'D', push: 'PU' };
@@ -1469,6 +1514,17 @@ function renderBets() {
     const total = matching.reduce((sum, b) => sum + b.stake, 0);
     el.textContent = total > 0 ? `-£${total.toFixed(2)}` : '';
   });
+
+  // Dealer's next card: show the pending stake (-£X) as soon as a bet is
+  // placed. Once settled the bet leaves `bets` and the result display
+  // takes over -- deliberately NOT blanked here when nothing is pending.
+  const dncBets = bets.filter(b => b.outcome === 'dealer_next_card');
+  if (dncBets.length) {
+    cancelDncHold();
+    const dncEl = document.getElementById('staked-dealer_next_card');
+    dncEl.textContent = `-£${dncBets.reduce((sum, b) => sum + b.stake, 0).toFixed(2)}`;
+    dncEl.classList.remove('won');
+  }
 }
 
 const SIDE_BET_LABELS = {
