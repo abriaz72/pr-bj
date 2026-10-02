@@ -235,6 +235,29 @@
     background: #ddd;
     color: #999;
   }
+  .countdown-row {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 10px 12px;
+    min-height: 56px;
+    box-sizing: border-box;
+  }
+  .countdown-row #countdownLabel {
+    font-size: 13px;
+    font-weight: bold;
+    min-width: 0;
+    flex: 1;
+  }
+  .countdown-row #countdownValue {
+    font-size: 20px;
+    font-weight: bold;
+    flex: 0 0 auto;
+  }
   .main-action-row { display: flex; }
   .main-action-row button {
     width: 100%;
@@ -312,8 +335,8 @@
 
   <button class="confirm-btn" id="confirmBtn" onclick="confirmSlip()" disabled>Confirm</button>
 
-  <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid #ddd;border-radius:10px;padding:12px;font-size:15px;font-weight:bold;">
-    <span id="countdownLabel">Place your bets</span>
+  <div class="countdown-row">
+    <span id="countdownLabel">Place your bets - hand starts in</span>
     <span id="countdownValue">20</span>
   </div>
 
@@ -955,7 +978,7 @@ function resetHandDisplay() {
 // hand, then queues the countdown that leads into the deal itself.
 function beginPreDealWindow() {
   resetHandDisplay();
-  scheduleNext('preDeal', 'Place your bets', startDeal);
+  scheduleNext('preDeal', 'Place your bets - hand starts in', startDeal);
 }
 
 let handHistory = []; // most recent first, max 8: 'player' | 'dealer' | 'push'
@@ -1140,7 +1163,7 @@ function startDeal() {
   }
 
   if (requiresPeek) {
-    scheduleNext('other', 'Checking for dealer blackjack in', checkDealerBlackjack);
+    scheduleNext('other', 'Place your bets - Checking for dealer blackjack in', checkDealerBlackjack);
     return;
   }
 
@@ -1183,9 +1206,9 @@ function schedulePlayerStep() {
   const action = basicStrategy(total, soft, dealerUp.value());
 
   if (action === 'HIT') {
-    scheduleNext('other', 'Player draws in', playerDrawCard);
+    scheduleNext('other', 'Place your bets - Player draws in', playerDrawCard);
   } else {
-    scheduleNext('other', "Reveal dealer's card in", revealDealerAndProceed);
+    scheduleNext('other', "Place your bets - Reveal dealer's card in", revealDealerAndProceed);
   }
 }
 
@@ -1216,7 +1239,7 @@ function revealDealerAndProceed() {
   setOddsDisplay(dealerPhaseOdds(dTotal, dSoft, playerFinalTotal));
   phase = 'dealer_turn';
   updateDealerNextCardMarket(dTotal, dSoft);
-  scheduleNext('other', 'Dealer draws in', dealerNextCard);
+  scheduleNext('other', 'Place your bets - Dealer draws in', dealerNextCard);
 }
 
 function dealerNextCard() {
@@ -1241,7 +1264,7 @@ function dealerNextCard() {
 
   setOddsDisplay(dealerPhaseOdds(dTotal, dSoft, playerFinalTotal));
   updateDealerNextCardMarket(dTotal, dSoft);
-  scheduleNext('other', 'Dealer draws in', dealerNextCard);
+  scheduleNext('other', 'Place your bets - Dealer draws in', dealerNextCard);
 }
 
 function onMarginChange() {
