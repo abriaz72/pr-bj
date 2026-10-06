@@ -82,7 +82,8 @@
     background: #fafafa;
     overflow: hidden;
   }
-  .odds-box.selected { border: 2px solid #222; background: #fff; }
+  /* Selection must never change layout: same 1px border, the extra weight is an outside shadow */
+  .odds-box.selected { border-color: #222; box-shadow: 0 0 0 1px #222; background: #fff; }
   .odds-box.settled { opacity: 0.4; }
   .odds-box .name { font-size: 12px; color: #666; }
   .odds-box .value { font-size: 24px; font-weight: bold; margin-top: 3px; white-space: nowrap; }
@@ -396,6 +397,7 @@
         <p>The bettor will be able to bet on any outcome during any of the betting windows. Betting opens when a new hand is started and stays open at every point where action takes place (in this demo mode, the length of every betting window can be set via the time box above.) Once a bet is placed, a cashout option will appear after every card is dealt. The bettor will also be able to bet on any other outcome at any time there is a live market.</p>
         <p>The bettor can use pre set bet sizes or choose their own amount. Session p/l is tracked above for reference.</p>
       </div>
+      <div style="margin-top:16px;font-size:10px;color:#aaa;">Version: v3 fixed layout (6 Oct, 21:15)</div>
     </div>
 
     <div class="info-page">
