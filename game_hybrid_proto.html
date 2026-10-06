@@ -25,11 +25,12 @@
     max-height: 900px;
     background: #fff;
     border-radius: 0;
-    padding: 10px;
+    padding: 8px 10px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     overflow: hidden;
+    overflow: clip; /* clip, unlike hidden, can never be scrolled (e.g. by Safari when something is tapped) */
   }
   .cards-row {
     border: 1px solid #ddd;
@@ -39,7 +40,7 @@
     flex-wrap: wrap;
     align-content: flex-start;
     gap: 5px;
-    height: 112px;
+    height: 80px;
   }
   .cards-row .label {
     width: 100%;
@@ -127,7 +128,7 @@
   .cashout-row .cashout-label { flex: 1; color: #333; }
   .cashout-row .cashout-value { font-weight: bold; color: #1a7d1a; }
   .box-bets { margin-top: 6px; height: 50px; font-size: 11px; color: #777; line-height: 1.6; overflow-y: auto; }
-  .cashout-row button { border: none; border-radius: 6px; padding: 10px 18px; font-size: 14px; font-weight: bold; }
+  .cashout-row button { border: none; border-radius: 6px; padding: 9px 18px; font-size: 14px; font-weight: bold; }
   .cashout-row .yes-btn { background: #1a7d1a; color: #fff; }
   .cashout-row .no-btn { background: #eee; color: #555; }
   .result-banner {
@@ -142,6 +143,12 @@
   .result-banner.lose { background: #fdecea; color: #b3261e; }
   .result-banner.push { background: #f2f2f2; color: #555; }
   .spacer { flex: 1; }
+  /* Fixed-size sections: nothing in the main column may shrink or grow,
+     so nothing above the slip can ever be squeezed or moved. */
+  #mainScreen > *:not(.spacer) { flex-shrink: 0; }
+  .cashout-section { height: 50px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .bet-slip { height: 68px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .result-banner { height: 28px; box-sizing: border-box; overflow: hidden; }
   .preset-row { display: flex; gap: 6px; }
   .preset-row button {
     flex: 1;
@@ -308,7 +315,7 @@
 
   <div class="margin-row" id="sessionRow" style="text-align:left;">Staked £0.00 · Returned £0.00 · Net £0.00</div>
 
-  <div id="peekResult" style="height:44px;display:flex;align-items:center;justify-content:center;color:#222;font-size:15px;font-weight:bold;text-align:center;border:1px solid transparent;border-radius:8px;"></div>
+  <div id="peekResult" style="height:38px;display:flex;align-items:center;justify-content:center;color:#222;font-size:15px;font-weight:bold;text-align:center;border:1px solid transparent;border-radius:8px;"></div>
 
   <div class="cards-row" id="dealerRow">
     <div class="label" id="dealerLabel">Dealer</div>
