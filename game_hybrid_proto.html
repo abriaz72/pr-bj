@@ -382,12 +382,12 @@
       </div>
       <div style="margin-top:16px;font-size:13px;color:#333;line-height:1.5;">
         <div style="font-size:11px;color:#888;margin-bottom:6px;">How it works</div>
-        <p>A hand starts when the bettor presses Deal, then plays out automatically to specific rules. Cards are dealt as a normal blackjack hand, with two for player and two for dealer, one of which is facedown. If dealer shows A or 10, there will be a check for blackjack. Player's cards are dealt using basic strategy, with two differences. There are no splits or doubles — the hard total of the two cards determines the next action (eg 8,8 v 6 is a stand, 8,8 v 7 takes a card).</p>
+        <p>A hand starts when the bettor presses Start new hand. After a betting countdown the cards are dealt, and the hand then plays out automatically to specific rules, stopping when it settles. Cards are dealt as a normal blackjack hand, with two for player and two for dealer, one of which is facedown. If dealer shows A or 10, there will be a check for blackjack. Player's cards are dealt using basic strategy, with two differences. There are no splits or doubles — the hard total of the two cards determines the next action (eg 8,8 v 6 is a stand, 8,8 v 7 takes a card).</p>
       </div>
       <div style="margin-top:16px;font-size:13px;color:#333;line-height:1.5;">
         <div style="font-size:11px;color:#888;margin-bottom:6px;">How to play</div>
-        <p>The user will be able to bet on any outcome during any of the betting windows. Betting is open from Start new hand until Deal is pressed, and then at every point where action takes place (in this demo mode, those in-game windows can be set via the time box above.) Once a bet is placed, a cashout option will appear after every card is dealt. The user will also be able to bet on any other outcome at any time there is a live market.</p>
-        <p>User can use pre set bet sizes or choose their own amount. Session p/l is tracked above for reference.</p>
+        <p>The bettor will be able to bet on any outcome during any of the betting windows. Betting opens when a new hand is started and stays open at every point where action takes place (in this demo mode, the length of every betting window can be set via the time box above.) Once a bet is placed, a cashout option will appear after every card is dealt. The bettor will also be able to bet on any other outcome at any time there is a live market.</p>
+        <p>The bettor can use pre set bet sizes or choose their own amount. Session p/l is tracked above for reference.</p>
       </div>
     </div>
 
@@ -732,7 +732,7 @@ let shoe, player, dealer, dealerUp;
 
 /* ---------- Hybrid timer engine ----------
    Nothing runs by itself between hands. The bettor starts a hand
-   (START NEW HAND opens betting, DEAL begins play). Once dealt, every
+   (START NEW HAND opens betting and starts the countdown to the deal). Once dealt, every
    in-game step advances on the "in game actions" timer. After the hand
    settles it stops and waits for START NEW HAND. */
 
@@ -968,7 +968,7 @@ function resetHandDisplay() {
 // hand, then queues the countdown that leads into the deal itself.
 function beginPreDealWindow() {
   resetHandDisplay();
-  setAction('DEAL', 'Place your bets', startDeal);
+  scheduleNext('other', 'Place your bets - cards dealt in', startDeal);
 }
 
 let handHistory = []; // most recent first, max 8: 'player' | 'dealer' | 'push'
@@ -1266,7 +1266,12 @@ function onMarginChange() {
 function initScreen() {
   renderSession();
   renderPresets();
-  beginPreDealWindow();
+  // First hand starts the same way as every later one: nothing is dealt
+  // and betting is closed until the bettor presses START NEW HAND.
+  phase = 'settled';
+  setOddsDisplay({ dealer: null, push: null, player: null });
+  setOddsSettled(true);
+  setAction('START NEW HAND', 'Press start to play', beginPreDealWindow);
 }
 </script>
 <script>
