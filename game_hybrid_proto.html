@@ -397,7 +397,7 @@
         <p>The bettor will be able to bet on any outcome during any of the betting windows. Betting opens when a new hand is started and stays open at every point where action takes place (in this demo mode, the length of every betting window can be set via the time box above.) Once a bet is placed, a cashout option will appear after every card is dealt. The bettor will also be able to bet on any other outcome at any time there is a live market.</p>
         <p>The bettor can use pre set bet sizes or choose their own amount. Session p/l is tracked above for reference.</p>
       </div>
-      <div style="margin-top:16px;font-size:10px;color:#aaa;">Version: v3 fixed layout (6 Oct, 21:15)</div>
+      <div style="margin-top:16px;font-size:10px;color:#aaa;">Version: v4 soft totals (7 Oct, 12:15)</div>
     </div>
 
     <div class="info-page">
@@ -1322,14 +1322,23 @@ function updateScoreLabel(labelId, name, hand, hideSecond) {
     return;
   }
   if (hideSecond) {
-    label.textContent = `${name} · ${hand.cards[0].value()}`;
+    // Only the up-card is known. A lone Ace is a soft 1/11.
+    const up = hand.cards[0];
+    label.textContent = `${name} · ${up.rank === 'A' ? '1/11' : up.value()}`;
     return;
   }
   if (hand.bust()) {
     label.textContent = `${name} · Bust`;
   } else {
-    label.textContent = `${name} · ${hand.total()}`;
+    label.textContent = `${name} · ${scoreText(hand)}`;
   }
+}
+
+// A soft hand (an Ace still counting as 11) shows both totals, low then
+// high: A,2,3 = 6/16. Soft 21 shows just 21 -- the low total no longer matters.
+function scoreText(hand) {
+  const [total, soft] = hand.totalAndSoft();
+  return (soft && total < 21) ? `${total - 10}/${total}` : `${total}`;
 }
 
 function setOddsDisplay(odds) {
