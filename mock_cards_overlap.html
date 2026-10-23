@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bet Blackjack - cards layout mock-up</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: #ccc; font-family: -apple-system, Helvetica, Arial, sans-serif; color: #222; }
+  button { font-family: inherit; touch-action: manipulation; }
+  .mock-bar { max-width: 430px; margin: 0 auto; padding: 6px 8px; font-size: 11px; color: #444; }
+  .mock-bar .grp { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; }
+  .mock-bar .grp > span { width: 92px; font-weight: bold; }
+  .mock-bar button { border: 1px solid #555; background: #fff; border-radius: 6px; font-size: 11px; padding: 5px 8px; }
+  .mock-bar button.on { background: #222; color: #fff; }
+
+  .screen { width: 390px; height: 699px; margin: 0 auto; background: #fff; padding: 8px 10px;
+            display: flex; flex-direction: column; gap: 4px; overflow: clip; position: relative; }
+  .screen > * { flex-shrink: 0; }
+  .top { display: flex; justify-content: space-between; align-items: center; height: 26px; }
+  .top b { font-size: 12px; }
+  .info { border: 1px solid #222; border-radius: 50%; width: 26px; height: 26px; text-align: center; line-height: 24px; font-weight: bold; font-size: 13px; }
+  .session { font-size: 11px; color: #888; height: 14px; }
+  .msg { height: 38px; }
+
+  /* Cards zone. Box size is fixed per arrangement; only the cards inside change. */
+  .zone.stacked { display: flex; flex-direction: column; gap: 4px; }
+  .zone.side { display: flex; gap: 6px; }
+  .zone.side .box { flex: 1 1 0; min-width: 0; }
+  .box { border: 1px solid #ddd; border-radius: 10px; padding: 6px; height: 94px; overflow: hidden; }
+  .box .label { font-size: 11px; color: #888; height: 14px; line-height: 14px; margin-bottom: 4px; }
+  .fan { position: relative; height: 62px; }
+  .card { position: absolute; top: 0; width: 44px; height: 62px; border: 1px solid #999; border-radius: 5px; background: #fff; }
+  .card.ov { box-shadow: -2px 0 3px rgba(0,0,0,.18); }
+  .card .rk { position: absolute; left: 4px; top: 3px; font-size: 15px; font-weight: bold; line-height: 1; }
+  .card .st { position: absolute; left: 4px; top: 20px; font-size: 13px; line-height: 1; }
+  .card .ct { position: absolute; right: 5px; bottom: 3px; font-size: 20px; line-height: 1; opacity: .85; }
+  .card.red { color: #b3261e; }
+
+  .free { border: 1px dashed #bbb; border-radius: 10px; color: #999; font-size: 11px; text-align: center; display: flex; align-items: center; justify-content: center; padding: 0 20px; }
+
+  .odds-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .odds-box { border: 1px solid #ddd; border-radius: 10px; height: 120px; padding: 10px 4px; text-align: center; background: #fafafa; }
+  .odds-box .name { font-size: 12px; color: #666; }
+  .odds-box .value { font-size: 24px; font-weight: bold; margin-top: 3px; }
+  .odds-box .position { font-size: 14px; font-weight: bold; margin-top: 4px; color: #1a7d1a; }
+  .sheet { height: 207px; border: 1px dashed #ccc; border-radius: 10px; color: #aaa; font-size: 12px; text-align: center; display: flex; align-items: center; justify-content: center; padding: 0 24px; }
+  .timer { height: 57px; border: 1px solid #ddd; border-radius: 10px; padding: 0 12px; display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .timer .t-label { font-size: 13px; font-weight: bold; }
+  .timer .t-val { font-size: 20px; font-weight: bold; }
+  .note { max-width: 390px; margin: 6px auto 14px; font-size: 11px; color: #444; padding: 0 8px; }
+</style>
+</head>
+<body>
+
+<div class="mock-bar">
+  <div class="grp"><span>Arrangement</span><button id="a-stacked" onclick="setArr('stacked')">Dealer above Player</button><button id="a-side" onclick="setArr('side')">Side by side</button></div>
+  <div class="grp"><span>Overlap</span><button id="m-A" onclick="setMode('A')">From the first card</button><button id="m-B" onclick="setMode('B')">Only when row is full</button></div>
+  <div class="grp"><span>Dealer cards</span><span id="dbtns" style="width:auto"></span></div>
+  <div class="grp"><span>Player cards</span><span id="pbtns" style="width:auto"></span></div>
+  <div class="grp"><span>Both</span><span id="bbtns" style="width:auto"></span></div>
+</div>
+
+<div class="screen" id="screen">
+  <div class="top"><b>Bet Blackjack</b><span class="info">i</span></div>
+  <div class="session">Staked £0.00 · Returned £0.00 · Net +£0.00</div>
+  <div class="msg"></div>
+
+  <div class="zone" id="zone">
+    <div class="box" id="dealerBox"><div class="label" id="dLabel"></div><div class="fan" id="dFan"></div></div>
+    <div class="box" id="playerBox"><div class="label" id="pLabel"></div><div class="fan" id="pFan"></div></div>
+  </div>
+  <div class="free" id="free" style="display:none"></div>
+
+  <div class="odds-row">
+    <div class="odds-box"><div class="name">Dealer</div><div class="value">1.51</div><div class="position">£0.00</div></div>
+    <div class="odds-box"><div class="name">Push</div><div class="value">11.90</div><div class="position">£0.00</div></div>
+    <div class="odds-box"><div class="name">Player</div><div class="value">3.27</div><div class="position">£0.00</div></div>
+  </div>
+  <div class="sheet">Bet area (keypad / cash-out / result), unchanged at 207px</div>
+  <div class="timer"><span class="t-label">Place your bets - Player draws in</span><span class="t-val">10</span></div>
+</div>
+<div class="note">Fake cards, for layout only. Odds boxes are 120px here (150px in the game) to pay for the bigger cards when Dealer sits above Player. Cards are 44 x 62px (34 x 46px in the game today).</div>
+
+<script>
+const CW = 44, GAP = 4, FAN = 0.6;           // card width, natural gap, overlap factor for "from the first card"
+const SUITS = ['♠','♥','♣','♦'];
+const SEQ_D = ['2','A','3','A','2','3','A','2','2','A','3'];
+const SEQ_P = ['3','A','2','A','2','A','3','2','2','A','3'];
+const COUNTS = [2,3,4,5,6,8,11];
+let arr = 'stacked', mode = 'A', dn = 2, pn = 2;
+
+function total(seq) {
+  let sum = 0, aces = 0;
+  seq.forEach(r => { if (r === 'A') { aces++; sum += 1; } else if ('KQJ'.includes(r)) sum += 10; else sum += parseInt(r, 10); });
+  if (sum > 21) return 'Bust';
+  if (aces && sum + 10 <= 21) return sum + 10 === 21 ? '21' : sum + '/' + (sum + 10);
+  return String(sum);
+}
+function step(n, W) {
+  if (n <= 1) return 0;
+  const fit = (W - CW) / (n - 1);
+  const want = mode === 'A' ? CW * FAN : CW + GAP;
+  return Math.min(want, fit);
+}
+function drawHand(seq, n, fanEl, labelEl, who, offset) {
+  const cards = seq.slice(0, n);
+  const W = fanEl.clientWidth;
+  const s = step(n, W);
+  const overlapped = n > 1 && s < CW;
+  labelEl.textContent = who + ' · ' + total(cards);
+  fanEl.innerHTML = cards.map((r, i) => {
+    const suit = SUITS[(i + offset) % 4], red = (suit === '♥' || suit === '♦');
+    return '<div class="card' + (red ? ' red' : '') + (overlapped && i > 0 ? ' ov' : '') + '" style="left:' + (i * s).toFixed(1) + 'px;z-index:' + i + '">' +
+      '<span class="rk">' + r + '</span><span class="st">' + suit + '</span><span class="ct">' + suit + '</span></div>';
+  }).join('');
+  return s;
+}
+function render() {
+  const zone = document.getElementById('zone');
+  zone.className = 'zone ' + arr;
+  const free = document.getElementById('free');
+  if (arr === 'side') {
+    free.style.display = 'flex'; free.style.height = '98px';
+    free.textContent = 'Side by side frees about 98px here. Not used in this mock; it could go to bigger boxes, bigger cards or a taller bet area.';
+  } else free.style.display = 'none';
+  drawHand(SEQ_D, dn, document.getElementById('dFan'), document.getElementById('dLabel'), 'Dealer', 0);
+  drawHand(SEQ_P, pn, document.getElementById('pFan'), document.getElementById('pLabel'), 'Player', 1);
+  ['stacked','side'].forEach(a => document.getElementById('a-' + a).classList.toggle('on', a === arr));
+  ['A','B'].forEach(m => document.getElementById('m-' + m).classList.toggle('on', m === mode));
+  const mk = (id, cur, fn) => { document.getElementById(id).innerHTML = COUNTS.map(c => '<button class="' + (cur === c ? 'on' : '') + '" onclick="' + fn + '(' + c + ')">' + c + '</button>').join(''); };
+  mk('dbtns', dn, 'setD'); mk('pbtns', pn, 'setP'); mk('bbtns', (dn === pn ? dn : -1), 'setB');
+}
+function setArr(a) { arr = a; render(); }
+function setMode(m) { mode = m; render(); }
+function setD(n) { dn = n; render(); }
+function setP(n) { pn = n; render(); }
+function setB(n) { dn = n; pn = n; render(); }
+render();
+</script>
+</body>
+</html>
