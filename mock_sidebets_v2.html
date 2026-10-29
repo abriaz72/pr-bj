@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bet Blackjack - side bets mock-up</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: #ccc; font-family: -apple-system, Helvetica, Arial, sans-serif; color: #222; }
+  button { font-family: inherit; touch-action: manipulation; }
+  .screen { width: 390px; height: 699px; margin: 0 auto; background: #fff; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; overflow: clip; position: relative; }
+  .screen > * { flex-shrink: 0; }
+  .top { display: flex; justify-content: space-between; align-items: center; height: 26px; }
+  .top b { font-size: 12px; }
+  .info { border: 1px solid #222; border-radius: 50%; width: 26px; height: 26px; text-align: center; line-height: 24px; font-weight: bold; font-size: 13px; cursor: pointer; }
+  .msg { height: 38px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: bold; text-align: center; }
+
+  /* Side bets: fill the blank space above the cards exactly (98px), so nothing else moves. */
+  .sb-row { display: flex; gap: 6px; height: 98px; }
+  .sb { flex: 1 1 0; min-width: 0; height: 98px; border: 1px solid #ddd; border-radius: 10px; background: #fafafa; padding: 6px; cursor: pointer; }
+  .sb.sel { border-color: #222; box-shadow: 0 0 0 1px #222; background: #fff; }
+  .sb.placed { border-color: #1a3fd4; background: #f3f6ff; }
+  .sb.locked { opacity: .4; cursor: default; }
+  .sb.won { border-color: #1a7d1a; background: #eefbee; cursor: default; }
+  .sb.lost { cursor: default; }
+  .sb-h { height: 14px; display: flex; justify-content: space-between; align-items: center; white-space: nowrap; }
+  .sb-n { font-size: 12px; font-weight: bold; }
+  .sb-r { font-size: 11px; font-weight: bold; color: #1a3fd4; }
+  .sb.won .sb-r { color: #1a7d1a; }
+  .sb.lost .sb-r { color: #b3261e; }
+  .sb-t { height: 14px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #444; white-space: nowrap; }
+  .sb-t span:last-child { font-weight: bold; color: #222; }
+  .sb-t.hit { color: #1a7d1a; font-weight: bold; }
+  .sb-t.hit span:last-child { color: #1a7d1a; }
+  .sb.lost .sb-t, .sb.lost .sb-t span:last-child { color: #999; }
+
+  .pair { display: flex; gap: 6px; }
+  .box { flex: 1 1 0; min-width: 0; border: 1px solid #ddd; border-radius: 10px; padding: 6px; height: 94px; overflow: hidden; }
+  .box .label { font-size: 11px; color: #888; height: 14px; line-height: 14px; margin-bottom: 4px; }
+  .fan { position: relative; height: 62px; }
+  .card { position: absolute; top: 0; width: 44px; height: 62px; border: 1px solid #999; border-radius: 5px; background: #fff; }
+  .card.ov { box-shadow: -2px 0 3px rgba(0,0,0,.18); }
+  .card .rk { position: absolute; left: 4px; top: 3px; font-size: 15px; font-weight: bold; line-height: 1; }
+  .card .st { position: absolute; left: 4px; top: 20px; font-size: 13px; line-height: 1; }
+  .card .ct { position: absolute; right: 5px; bottom: 3px; font-size: 20px; line-height: 1; opacity: .85; }
+  .card.red { color: #b3261e; }
+  .card.hidden { background: repeating-linear-gradient(45deg, #ddd, #ddd 4px, #eee 4px, #eee 8px); }
+
+  .odds-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .odds-box { border: 1px solid #ddd; border-radius: 10px; height: 120px; padding: 10px 4px; text-align: center; background: #fafafa; }
+  .odds-box .name { font-size: 12px; color: #666; }
+  .odds-box .value { font-size: 24px; font-weight: bold; margin-top: 3px; }
+  .odds-box .position { font-size: 14px; font-weight: bold; margin-top: 4px; color: #1a7d1a; }
+  .col { display: flex; flex-direction: column; gap: 4px; height: 120px; }
+  .col .cap { height: 14px; line-height: 14px; text-align: center; font-size: 12px; color: #666; }
+  .col .ob { height: 66px; border: 1px solid #ddd; border-radius: 10px; background: #fafafa; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; }
+  .col .pb { height: 32px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: bold; color: #1a7d1a; }
+  .sheet { height: 207px; border: 1px dashed #ccc; border-radius: 10px; color: #aaa; font-size: 12px; text-align: center; display: flex; align-items: center; justify-content: center; padding: 0 24px; }
+  .timer { height: 57px; border: 1px solid #ddd; border-radius: 10px; padding: 0 12px; display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .timer .t-label { font-size: 13px; font-weight: bold; }
+  .timer .t-val { font-size: 20px; font-weight: bold; }
+  .note { max-width: 390px; margin: 6px auto 14px; font-size: 11px; color: #444; padding: 0 8px; }
+
+  .ctl { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .ctl > .lbl { width: 100%; font-size: 11px; color: #888; margin-bottom: 2px; }
+  .ctl button { border: 1px solid #555; background: #fff; border-radius: 6px; font-size: 12px; padding: 6px 9px; }
+  .ctl button.on { background: #222; color: #fff; }
+  .info-ov { position: absolute; inset: 0; background: #fff; padding: 8px 10px; z-index: 100; display: none; flex-direction: column; }
+  .info-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; font-size: 11px; color: #888; }
+  .info-head button { border: 1px solid #222; background: #fff; color: #222; width: 26px; height: 26px; border-radius: 50%; font-weight: bold; }
+  .sec { margin-top: 16px; font-size: 13px; color: #333; line-height: 1.5; }
+  .sec:first-of-type { margin-top: 4px; }
+  .sec .h { font-size: 11px; color: #888; margin-bottom: 6px; }
+  .sb { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 6px; }
+  .sb-big { font-size: 30px; font-weight: bold; line-height: 1.1; }
+  .sb-sub { height: 16px; line-height: 16px; margin-top: 6px; font-size: 13px; font-weight: bold; white-space: nowrap; color: #1a3fd4; }
+  .sb-sub2 { height: 14px; line-height: 14px; font-size: 11px; font-weight: bold; white-space: nowrap; color: #1a7d1a; }
+  .sb.won .sb-sub { color: #1a7d1a; }
+  .sb.lost .sb-sub { color: #b3261e; }
+  .sb.lost .sb-big { color: #999; }
+  .pay { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 12px; }
+  .pay b { display: block; margin-bottom: 4px; font-size: 13px; }
+  .pay div div { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid #eee; }
+</style>
+</head>
+<body>
+<div class="screen" id="screen">
+  <div class="info-ov" id="ov">
+    <div class="info-head"><span>Settings &amp; rules</span><button onclick="openInfo(false)">&times;</button></div>
+    <div class="sec"><div class="h">Side bets (test setting)</div>
+      <div class="ctl"><span class="lbl">State</span>
+        <button id="st-open" onclick="setState('open')">Before the deal</button>
+        <button id="st-placed" onclick="setState('placed')">Bets placed</button>
+        <button id="st-lost" onclick="setState('lost')">Settled: lost</button>
+        <button id="st-won" onclick="setState('won')">Settled: won</button>
+        <button id="st-nobet" onclick="setState('nobet')">Settled: no bet</button>
+      </div>
+    </div>
+    <div class="sec"><div class="h">Odds and position display</div>
+      <div class="ctl"><span class="lbl">Style</span>
+        <button id="os-one" onclick="setOdds('one')">One box</button>
+        <button id="os-split" onclick="setOdds('split')">Split into parts</button>
+      </div>
+    </div>
+    <div class="sec"><div class="h">Side bet payouts (decimal, stake included)</div>
+      <div class="pay"><div><b>PP · Perfect Pairs</b><div><span>Mixed pair</span><span>6.00</span></div><div><span>Coloured pair</span><span>11.00</span></div><div><span>Perfect pair</span><span>26.00</span></div></div>
+      <div><b>21+3</b><div><span>Flush</span><span>6.00</span></div><div><span>Straight</span><span>11.00</span></div><div><span>Three of a kind</span><span>31.00</span></div><div><span>Straight flush</span><span>41.00</span></div><div><span>Suited trips</span><span>101.00</span></div></div></div>
+    </div>
+    <div class="sec" style="font-size:11px;color:#999;">Side by side layout only. Close this panel to see the screen. Before the deal, tap a side bet to select it.</div>
+  </div>
+
+  <div class="top"><b>Bet Blackjack</b><span class="info" onclick="openInfo(true)">i</span></div>
+  <div class="msg" id="msg"></div>
+  <div class="sb-row" id="sbRow"></div>
+  <div class="pair">
+    <div class="box"><div class="label" id="dLabel">Dealer</div><div class="fan" id="dFan"></div></div>
+    <div class="box"><div class="label" id="pLabel">Player</div><div class="fan" id="pFan"></div></div>
+  </div>
+  <div class="odds-row" id="oddsRow"></div>
+  <div class="sheet">Bet area (keypad, cash-out and result), as in the base game</div>
+  <div class="timer"><span class="t-label" id="tLabel"></span><span class="t-val" id="tVal">10</span></div>
+</div>
+<div class="note">Fake data, for layout only. Prices are decimal odds, as in the reference side-bets game (6.00 = 5/1). Side bets can only be placed before the deal and settle once the first two cards are out.</div>
+
+<script>
+const PP = { id: 'pp', name: 'Perfect Pairs', short: 'PP', tiers: [['Mixed pair', 6], ['Coloured pair', 11], ['Perfect pair', 26]] };
+const T3 = { id: 't3', name: '21+3', short: '21+3', tiers: [['Flush', 6], ['Straight', 11], ['Three of a kind', 31], ['Straight flush', 41], ['Suited trips', 101]] };
+const STAKE = 10;
+const HANDS = {
+  lost: { p: [['7','♠'], ['K','♦']], d: [['3','♣']], pl: '17', dl: '3', hit: {} },
+  won:  { p: [['8','♥'], ['8','♦']], d: [['8','♠']], pl: '16', dl: '8', hit: { pp: 1, t3: 2 } }
+};
+let state = 'open', oddsStyle = 'one', sel = {};
+
+function fan(cards, hideHole) {
+  const list = cards.map(c => ({ r: c[0], s: c[1] }));
+  if (hideHole) list.push({ hidden: true });
+  const W = 168, CW = 44, step = Math.min(CW * 0.6, list.length > 1 ? (W - CW) / (list.length - 1) : 0);
+  return list.map((c, i) => {
+    const ov = i > 0 ? ' ov' : '';
+    if (c.hidden) return '<div class="card hidden' + ov + '" style="left:' + (i * step).toFixed(1) + 'px;z-index:' + i + '"></div>';
+    const red = (c.s === '♥' || c.s === '♦') ? ' red' : '';
+    return '<div class="card' + red + ov + '" style="left:' + (i * step).toFixed(1) + 'px;z-index:' + i + '"><span class="rk">' + c.r + '</span><span class="st">' + c.s + '</span><span class="ct">' + c.s + '</span></div>';
+  }).join('');
+}
+function tile(m) {
+  const h = HANDS[state === 'won' ? 'won' : 'lost'];
+  const hitIdx = state === 'won' ? h.hit[m.id] : undefined;
+  let cls = 'sb', sub = '', sub2 = '';
+  if (state === 'open') { if (sel[m.id]) cls += ' sel'; }
+  else if (state === 'placed') { cls += ' placed'; sub = '£' + STAKE; }
+  else if (state === 'won') { cls += ' won'; sub = 'Returned £' + (STAKE * m.tiers[hitIdx][1]); sub2 = m.tiers[hitIdx][0]; }
+  else if (state === 'lost') { cls += ' lost'; sub = 'Lost £' + STAKE; }
+  else if (state === 'nobet') { cls += ' locked'; }
+  return '<div class="' + cls + '" onclick="pickTile(\'' + m.id + '\')"><div class="sb-big">' + m.short + '</div><div class="sb-sub">' + sub + '</div><div class="sb-sub2">' + sub2 + '</div></div>';
+}
+function render() {
+  document.getElementById('sbRow').innerHTML = tile(PP) + tile(T3);
+  const settled = state === 'lost' || state === 'won' || state === 'nobet';
+  const h = HANDS[state === 'won' ? 'won' : 'lost'];
+  document.getElementById('dFan').innerHTML = settled ? fan(h.d, true) : '';
+  document.getElementById('pFan').innerHTML = settled ? fan(h.p, false) : '';
+  document.getElementById('dLabel').textContent = settled ? 'Dealer · ' + h.dl : 'Dealer';
+  document.getElementById('pLabel').textContent = settled ? 'Player · ' + h.pl : 'Player';
+  document.getElementById('msg').textContent = state === 'won' ? 'Perfect Pairs and 21+3 win' : '';
+  document.getElementById('tLabel').textContent = settled ? 'Place your bets - Player draws in' : 'Place your bets - cards dealt in';
+  const O = { dealer: settled ? 2.28 : 1.97, push: settled ? 15.23 : 10.98, player: settled ? 1.83 : 2.20 };
+  document.getElementById('oddsRow').innerHTML = ['dealer', 'push', 'player'].map(o => {
+    const n = o[0].toUpperCase() + o.slice(1);
+    return oddsStyle === 'one'
+      ? '<div class="odds-box"><div class="name">' + n + '</div><div class="value">' + O[o].toFixed(2) + '</div><div class="position">£0.00</div></div>'
+      : '<div class="col"><div class="cap">' + n + '</div><div class="ob">' + O[o].toFixed(2) + '</div><div class="pb">£0.00</div></div>';
+  }).join('');
+  ['open','placed','lost','won','nobet'].forEach(k => document.getElementById('st-' + k).classList.toggle('on', state === k));
+  ['one','split'].forEach(k => document.getElementById('os-' + k).classList.toggle('on', oddsStyle === k));
+}
+function pickTile(id) { if (state !== 'open') return; sel[id] = !sel[id]; render(); }
+function setState(s) { state = s; render(); }
+function setOdds(s) { oddsStyle = s; render(); }
+function openInfo(show) { document.getElementById('ov').style.display = show ? 'flex' : 'none'; }
+let t = 10; setInterval(() => { t = t <= 1 ? 10 : t - 1; document.getElementById('tVal').textContent = t; }, 1000);
+render();
+</script>
+</body>
+</html>
