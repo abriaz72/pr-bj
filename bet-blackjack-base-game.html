@@ -87,6 +87,7 @@
   .odds-row.split .odds-box .position { height: 32px; margin: 0; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; display: flex; align-items: center; justify-content: center; font-size: 15px; }
   .odds-row.split .odds-box.selected { border: none; box-shadow: none; background: transparent; }
   .odds-row.split .odds-box.selected .value { border-color: #222; box-shadow: 0 0 0 1px #222; background: #fff; }
+  body.show-stake .odds-box .position { color:#222; }
   body.no-pos .odds-box .position { display:none !important; }
   body.no-pos .odds-box { display:flex; flex-direction:column; justify-content:center; }
   body.no-pos .odds-row.split .odds-box { justify-content:flex-start; }
@@ -444,11 +445,15 @@
         <div class="lay-row"><span class="lbl">Style</span>
           <button id="odds-one" onclick="setOddsStyle('one')">One box</button>
           <button id="odds-split" onclick="setOddsStyle('split')">Three boxes</button></div>
-        <div class="lay-row"><span class="lbl">Positions</span>
+        <div class="lay-row"><span class="lbl">Position</span>
           <button id="pos-on" onclick="setPositions(true)">Show</button>
           <button id="pos-off" onclick="setPositions(false)">Hide</button></div>
+        <div class="lay-row"><span class="lbl">Stake</span>
+          <button id="stk-on" onclick="setStakeShow(true)">Show</button>
+          <button id="stk-off" onclick="setStakeShow(false)">Hide</button></div>
+        <div style="font-size:11px;color:#888;margin-top:2px;">Position and Stake share the same space, so only one can be shown.</div>
       </div>
-      <div style="margin-top:16px;font-size:10px;color:#aaa;">Version: keypad bet section + cards layout and odds display settings, positions show/hide, info page edits (4 Nov)</div>
+      <div style="margin-top:16px;font-size:10px;color:#aaa;">Version: keypad bet section + cards layout and odds display settings, position / stake show/hide, info page edits (4 Nov)</div>
     </div>
 
     <div class="info-page">
@@ -1419,19 +1424,26 @@ function applyOddsStyle() {
   document.getElementById('oddsRow').classList.toggle('split', oddsStyle === 'split');
   ['one', 'split'].forEach(v => document.getElementById('odds-' + v).classList.toggle('on', oddsStyle === v));
 }
-const POS_KEY = 'bj_show_positions';
-let showPositions = true;
-try { if (localStorage.getItem(POS_KEY) === '0') showPositions = false; } catch (e) { /* keep default */ }
+const POS_KEY = 'bj_show_positions', STK_KEY = 'bj_show_stake';
+let showPositions = true, showStake = false;
+try {
+  if (localStorage.getItem(POS_KEY) === '0') showPositions = false;
+  if (localStorage.getItem(STK_KEY) === '1') { showStake = true; showPositions = false; }
+} catch (e) { /* keep defaults */ }
 function applyPositions() {
-  document.body.classList.toggle('no-pos', !showPositions);
+  document.body.classList.toggle('no-pos', !showPositions && !showStake);
+  document.body.classList.toggle('show-stake', showStake);
   document.getElementById('pos-on').classList.toggle('on', showPositions);
   document.getElementById('pos-off').classList.toggle('on', !showPositions);
+  document.getElementById('stk-on').classList.toggle('on', showStake);
+  document.getElementById('stk-off').classList.toggle('on', !showStake);
+  renderPositions();
 }
-function setPositions(v) {
-  showPositions = v;
-  try { localStorage.setItem(POS_KEY, v ? '1' : '0'); } catch (e) { /* ignore */ }
-  applyPositions();
+function saveShow() {
+  try { localStorage.setItem(POS_KEY, showPositions ? '1' : '0'); localStorage.setItem(STK_KEY, showStake ? '1' : '0'); } catch (e) { /* ignore */ }
 }
+function setPositions(v) { showPositions = v; if (v) showStake = false; saveShow(); applyPositions(); }
+function setStakeShow(v) { showStake = v; if (v) showPositions = false; saveShow(); applyPositions(); }
 function setOddsStyle(v) {
   oddsStyle = v;
   try { localStorage.setItem(ODDS_STYLE_KEY, v); } catch (e) { /* ignore */ }
@@ -1600,6 +1612,12 @@ function renderPositions() {
   ['dealer', 'push', 'player'].forEach(outcome => {
     const value = positionFor(outcome);
     const el = document.getElementById('pos-' + outcome);
+    if (showStake) {
+      const stake = bets.reduce((t, b) => b.outcome === outcome ? t + b.stake : t, 0);
+      el.textContent = stake > 0 ? '£' + stake.toFixed(2) : '';
+      el.classList.remove('negative');
+      return;
+    }
     if (value === 0) {
       el.textContent = '£0.00';
     } else {
