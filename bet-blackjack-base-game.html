@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Bet Blackjack - Base Game</title>
+<title>Bet Blackjack</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -87,6 +87,10 @@
   .odds-row.split .odds-box .position { height: 32px; margin: 0; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; display: flex; align-items: center; justify-content: center; font-size: 15px; }
   .odds-row.split .odds-box.selected { border: none; box-shadow: none; background: transparent; }
   .odds-row.split .odds-box.selected .value { border-color: #222; box-shadow: 0 0 0 1px #222; background: #fff; }
+  body.no-pos .odds-box .position { display:none !important; }
+  body.no-pos .odds-box { display:flex; flex-direction:column; justify-content:center; }
+  body.no-pos .odds-row.split .odds-box { justify-content:flex-start; }
+  body.no-pos .odds-row.split .odds-box .value { height:102px; }
   .history-strip { display: flex; gap: 3px; overflow: hidden; }
   .history-badge {
     flex: 0 0 auto;
@@ -400,7 +404,7 @@
 
 <div class="screen" id="infoScreen" style="display:none;">
   <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;">
-    <span style="font-size:11px;color:#888;">Settings &amp; rules</span>
+    <span style="font-size:11px;color:#888;">Demo settings</span>
     <button onclick="toggleInfoPanel(false)" style="border:1px solid #222;background:#fff;color:#222;width:26px;height:26px;border-radius:50%;font-weight:bold;">&times;</button>
   </div>
   <div class="info-dots">
@@ -426,10 +430,6 @@
         </div>
       </div>
       <div style="margin-top:16px;">
-        <div style="font-size:11px;color:#888;margin-bottom:6px;">Session</div>
-        <div id="sessionRow" style="font-size:13px;color:#333;">Staked £0.00 · Returned £0.00 · Net £0.00</div>
-      </div>
-      <div style="margin-top:16px;">
         <div style="font-size:11px;color:#888;margin-bottom:6px;">Layout test controls</div>
         <div class="lay-row"><span class="lbl">Arrangement</span>
           <button id="lay-stacked" onclick="setLayoutOption('arrangement','stacked')">Dealer above Player</button>
@@ -443,9 +443,12 @@
         <div style="font-size:11px;color:#888;margin-bottom:6px;">Odds and position display</div>
         <div class="lay-row"><span class="lbl">Style</span>
           <button id="odds-one" onclick="setOddsStyle('one')">One box</button>
-          <button id="odds-split" onclick="setOddsStyle('split')">Split into parts</button></div>
+          <button id="odds-split" onclick="setOddsStyle('split')">Three boxes</button></div>
+        <div class="lay-row"><span class="lbl">Positions</span>
+          <button id="pos-on" onclick="setPositions(true)">Show</button>
+          <button id="pos-off" onclick="setPositions(false)">Hide</button></div>
       </div>
-      <div style="margin-top:16px;font-size:10px;color:#aaa;">Version: keypad bet section + cards layout and odds display settings (29 Oct)</div>
+      <div style="margin-top:16px;font-size:10px;color:#aaa;">Version: keypad bet section + cards layout and odds display settings, positions show/hide, info page edits (4 Nov)</div>
     </div>
 
     <div class="info-page">
@@ -457,6 +460,10 @@
         <div style="font-size:11px;color:#888;margin-bottom:6px;">How to play</div>
         <p>The bettor will be able to bet on any outcome during any of the betting windows. Betting opens when a new hand is started and stays open at every point where action takes place Once a bet is placed, a cashout option will appear after every card is dealt. The bettor will also be able to bet on any other outcome at any time there is a live market.</p>
         <p>The bettor types a stake on the keypad, or adds to it with the +£5, +£25 and +£100 buttons.</p>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="font-size:11px;color:#888;margin-bottom:6px;">Session P&amp;L</div>
+        <div id="sessionRow" style="font-size:13px;color:#333;">Staked £0.00 · Returned £0.00 · Net £0.00</div>
       </div>
     </div>
 
@@ -1412,6 +1419,19 @@ function applyOddsStyle() {
   document.getElementById('oddsRow').classList.toggle('split', oddsStyle === 'split');
   ['one', 'split'].forEach(v => document.getElementById('odds-' + v).classList.toggle('on', oddsStyle === v));
 }
+const POS_KEY = 'bj_show_positions';
+let showPositions = true;
+try { if (localStorage.getItem(POS_KEY) === '0') showPositions = false; } catch (e) { /* keep default */ }
+function applyPositions() {
+  document.body.classList.toggle('no-pos', !showPositions);
+  document.getElementById('pos-on').classList.toggle('on', showPositions);
+  document.getElementById('pos-off').classList.toggle('on', !showPositions);
+}
+function setPositions(v) {
+  showPositions = v;
+  try { localStorage.setItem(POS_KEY, v ? '1' : '0'); } catch (e) { /* ignore */ }
+  applyPositions();
+}
 function setOddsStyle(v) {
   oddsStyle = v;
   try { localStorage.setItem(ODDS_STYLE_KEY, v); } catch (e) { /* ignore */ }
@@ -1679,6 +1699,7 @@ function setActionButton(buttonText, label) {
 }
 
 applyOddsStyle();
+applyPositions();
 applyLayout();
 initScreen();
 </script>
