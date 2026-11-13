@@ -425,6 +425,16 @@
         </select>
       </div>
       <div style="margin-top:16px;">
+        <div style="font-size:11px;color:#888;margin-bottom:6px;">Opening odds</div>
+        <div style="font-size:12px;color:#555;line-height:1.4;margin-bottom:8px;">The prices shown before the deal. The margin above is used for every price after the deal, and for the opening prices when True odds + margin is selected.</div>
+        <div class="lay-row">
+          <button id="op-true" onclick="setOpeningOdds('true')">True odds + margin</button>
+          <button id="op-rounded" onclick="setOpeningOdds('rounded')">Rounded</button>
+          <button id="op-even" onclick="setOpeningOdds('even')">Even money</button></div>
+        <div style="font-size:12px;color:#555;line-height:1.4;margin-bottom:8px;margin-bottom:2px;" id="opDesc"></div>
+        <div id="opNote" style="font-size:11px;color:#b36b00;min-height:14px;"></div>
+      </div>
+      <div style="margin-top:16px;">
         <div style="font-size:11px;color:#888;margin-bottom:6px;">Timing (seconds)</div>
         <div id="dealRow" style="display:none;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <span style="font-size:13px;color:#555;">Time between games</span>
@@ -467,7 +477,7 @@
           <button id="stk-on" onclick="setStakeShow(true)">Show</button>
           <button id="stk-off" onclick="setStakeShow(false)">Hide</button></div>
       </div>
-      <div style="margin-top:16px;font-size:10px;color:#aaa;">Version: base game with manual / non stop game version, position / stake show/hide (5 Nov)</div>
+      <div style="margin-top:16px;font-size:10px;color:#aaa;">Version: base game with manual / non stop game version, position / stake show/hide, opening odds options (13 Nov)</div>
     </div>
 
     <div class="info-page">
@@ -714,7 +724,38 @@ function oddsFromProbability(p, margin) {
   return (1 / p) * (1 - margin);
 }
 
+// Opening odds options: 'true' = true odds + margin; the others are fixed prices.
+const OPENING_FIXED = {
+  rounded: { dealer: 1.95, player: 2.20, push: 10.00 },
+  even:    { dealer: 1.95, player: 2.00, push: 10.00 },
+};
+const OPENING_KEY = 'bj_opening_odds';
+let openingMode = 'true', pendingOpening = null;
+try { const v = localStorage.getItem(OPENING_KEY); if (v === 'rounded' || v === 'even') openingMode = v; } catch (e) { /* keep default */ }
+
+function applyOpeningMode() {
+  if (pendingOpening) { openingMode = pendingOpening; pendingOpening = null; }
+  renderOpeningControls();
+}
+function setOpeningOdds(v) {
+  try { localStorage.setItem(OPENING_KEY, v); } catch (e) { /* ignore */ }
+  if (v === openingMode) { pendingOpening = null; renderOpeningControls(); return; }
+  pendingOpening = v;
+  // Nothing is priced while a manual game waits to start, so apply straight away; otherwise next hand.
+  if (phase === 'settled') applyOpeningMode(); else renderOpeningControls();
+}
+function renderOpeningControls() {
+  const shown = pendingOpening || openingMode;
+  ['true', 'rounded', 'even'].forEach(v => document.getElementById('op-' + v).classList.toggle('on', shown === v));
+  const f = OPENING_FIXED[shown];
+  document.getElementById('opDesc').textContent = f
+    ? `Fixed opening prices: Dealer ${f.dealer.toFixed(2)}, Player ${f.player.toFixed(2)}, Push ${f.push.toFixed(2)}.`
+    : 'Opening prices are the true chances with the margin taken out.';
+  document.getElementById('opNote').textContent = pendingOpening ? 'Takes effect when the next hand starts.' : '';
+}
+
 function preDealOdds() {
+  if (OPENING_FIXED[openingMode]) return Object.assign({}, OPENING_FIXED[openingMode]);
   const margin = getCurrentMargin();
   const p = ODDS_TABLE.pre_deal;
   return {
@@ -1128,6 +1169,7 @@ function resetHandDisplay() {
 // Enters the pre-deal betting window: resets the display for a fresh
 // hand, then queues the countdown that leads into the deal itself.
 function beginPreDealWindow() {
+  applyOpeningMode();
   resetHandDisplay();
   scheduleNext(gameMode === 'nonstop' ? 'preDeal' : 'other', 'Place your bets - cards dealt in', startDeal);
 }
@@ -1487,6 +1529,7 @@ function startForMode() {
 }
 
 function initScreen() {
+  renderOpeningControls();
   renderSession();
   renderPresets();
   applyGameMode();
