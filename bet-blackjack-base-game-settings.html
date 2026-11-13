@@ -747,10 +747,15 @@ function setOpeningOdds(v) {
 function renderOpeningControls() {
   const shown = pendingOpening || openingMode;
   ['true', 'rounded', 'even'].forEach(v => document.getElementById('op-' + v).classList.toggle('on', shown === v));
-  const f = OPENING_FIXED[shown];
-  document.getElementById('opDesc').textContent = f
-    ? `Fixed opening prices: Dealer ${f.dealer.toFixed(2)}, Player ${f.player.toFixed(2)}, Push ${f.push.toFixed(2)}.`
-    : 'Opening prices are the true chances with the margin taken out.';
+  const p = ODDS_TABLE.pre_deal;
+  const line = (name, f) => {
+    const m = k => ((1 - p[k] * f[k]) * 100).toFixed(1) + '%';
+    return `<div style="margin-bottom:6px;"><b>${name}</b>: Dealer ${f.dealer.toFixed(2)}, Player ${f.player.toFixed(2)}, Push ${f.push.toFixed(2)}<br>` +
+      `Margin before the deal: Dealer ${m('dealer')}, Player ${m('player')}, Push ${m('push')}</div>`;
+  };
+  document.getElementById('opDesc').innerHTML =
+    '<div style="margin-bottom:6px;"><b>True odds + margin</b>: the true chances with the margin set above taken out.</div>' +
+    line('Rounded', OPENING_FIXED.rounded) + line('Even money', OPENING_FIXED.even);
   document.getElementById('opNote').textContent = pendingOpening ? 'Takes effect when the next hand starts.' : '';
 }
 
