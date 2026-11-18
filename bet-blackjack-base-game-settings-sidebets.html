@@ -51,11 +51,17 @@
   /* Cards layout (set on the info page): both arrangements use the same total height,
      so nothing below the cards ever moves when the setting changes. */
   #cardsWrap { position: relative; }
+  body.frozen * { animation-play-state: paused !important; }
+  body.frozen #pauseBtn { background: #222 !important; color: #fff !important; }
+  .pl { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 4px; padding: 4px 0; border-bottom: 1px solid #eee; text-align: right; }
+  .pl > span:first-child { text-align: left; }
+  .pl.hd { color: #888; font-size: 11px; } .pl.tot { font-weight: bold; } .pl.sub > span:first-child { padding-left: 10px; color: #555; }
+  .pl .pos { color: #1a7d1a; } .pl .neg { color: #b3261e; }
   body.stk-sb #peekResult { position: absolute; left: 60px; right: 60px; top: 6px; height: 30px !important; z-index: 5; border-radius: 8px; font-size: 14px !important; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
   body.stk-sb #peekResult:empty { display: none !important; }
   body.stk-sb .sb-row { height: 62px; align-items: center; }
   .ncb { width: 100%; height: 54px; border: 1px solid #ddd; border-radius: 10px; background: #fafafa; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; cursor: pointer; }
-  .ncb .l { font-size: 14px; font-weight: bold; } .ncb .l small { display: block; font-size: 11px; font-weight: normal; color: #666; }
+  .ncb .l small { display: block; font-size: 11px; font-weight: normal; color: #666; margin-bottom: 2px; } .ncb .mc { width: 24px; height: 30px; font-size: 13px; padding-top: 5px; } .ncb .mc.any { padding-top: 9px; } .ncb .mcs { justify-content: flex-start; }
   .ncb .r { text-align: right; font-size: 24px; font-weight: bold; line-height: 1.05; } .ncb .r small { display: block; font-size: 13px; color: #1a7d1a; }
   .ncb.sel { border-color: #222; box-shadow: 0 0 0 1px #222; background: #fff; }
   .ncb.placed { border-color: #1a3fd4; background: #f3f6ff; }
@@ -63,6 +69,7 @@
   .ncb.won .r { color: #1a7d1a; } .ncb.lost .r { color: #b3261e; } .ncb.done { cursor: default; }
   #cardsWrap.cards-stack { display: flex; flex-direction: column; gap: 4px; }
   #cardsWrap.cards-pair { display: flex; gap: 6px; }
+  #cardsWrap.cards-pair.swap { flex-direction: row-reverse; }
   #cardsWrap.cards-pair .cards-row { flex: 1 1 0; min-width: 0; }
   #topSpacer { height: 98px; display: none; }
   body.sb-on #topSpacer { height: 28px; }
@@ -73,11 +80,16 @@
   body.sb-nc .sb-row { height: 98px; align-items: center; }
   .sbc .nm { font-size: 11px; line-height: 1.05; text-align: center; }
   /* Dealer's next card square: one-box style */
-  .nc { width: 94px; height: 94px; border: 1px solid #ddd; border-radius: 10px; background: #fafafa; text-align: center; padding: 6px 2px; cursor: pointer; overflow: hidden; }
-  .nc .n { font-size: 11px; color: #666; height: 13px; line-height: 13px; white-space: nowrap; }
-  .nc .t { font-size: 14px; font-weight: bold; height: 17px; line-height: 17px; white-space: nowrap; }
-  .nc .o { font-size: 24px; font-weight: bold; height: 28px; line-height: 28px; white-space: nowrap; }
-  .nc .p { font-size: 13px; font-weight: bold; height: 15px; line-height: 15px; color: #1a7d1a; white-space: nowrap; }
+  .nc { width: 94px; height: 94px; border: 1px solid #ddd; border-radius: 10px; background: #fafafa; text-align: center; padding: 4px 2px; cursor: pointer; overflow: hidden; }
+  .mcs { display: flex; justify-content: center; gap: 2px; }
+  .mc { width: 20px; height: 26px; border: 1px solid #999; border-radius: 3px; background: #fff; color: #222; font-weight: bold; font-size: 11px; line-height: 1; text-align: center; padding-top: 3px; }
+  .mc i { display: block; font-style: normal; font-size: 10px; margin-top: 1px; }
+  .mc.rd { color: #b3261e; } .mc.any { padding-top: 7px; font-size: 12px; }
+  .nc .n.long { font-size: 9px; }
+  .nc .n { font-size: 10px; color: #666; height: 12px; line-height: 12px; white-space: nowrap; margin-bottom: 2px; }
+  .nc .t { height: 26px; margin-bottom: 2px; }
+  .nc .o { font-size: 24px; font-weight: bold; height: 26px; line-height: 26px; white-space: nowrap; }
+  .nc .p { font-size: 13px; font-weight: bold; height: 14px; line-height: 14px; color: #1a7d1a; white-space: nowrap; }
   .nc.sel { border-color: #222; box-shadow: 0 0 0 1px #222; background: #fff; }
   .nc.placed { border-color: #1a3fd4; background: #f3f6ff; }
   .nc.won { border-color: #1a7d1a; background: #eefbee; cursor: default; }
@@ -85,9 +97,10 @@
   .nc.won .o { color: #1a7d1a; } .nc.lost .o { color: #b3261e; } .nc.lost .n, .nc.lost .t { color: #999; }
   /* split style: caption outside, odds box, position box */
   .ncs { width: 124px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; }
-  .ncs .cap { height: 14px; line-height: 14px; font-size: 11px; color: #666; text-align: center; white-space: nowrap; }
-  .ncs .ob { width: 96px; height: 54px; margin: 0 auto; border: 1px solid #ddd; border-radius: 10px; background: #fafafa; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: bold; }
-  .ncs .pb { width: 96px; height: 22px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; color: #1a7d1a; }
+  .ncs .cap { font-size: 10px; color: #666; text-align: center; white-space: nowrap; line-height: 12px; }
+  .ncs .cap .mcs { margin-top: 2px; } .ncs .cap .mc { width: 26px; height: 28px; font-size: 12px; padding-top: 4px; } .ncs .cap .mc.any { padding-top: 8px; font-size: 13px; }
+  .ncs .ob { width: 96px; height: 34px; margin: 0 auto; border: 1px solid #ddd; border-radius: 10px; background: #fafafa; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; }
+  .ncs .pb { width: 96px; height: 16px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; color: #1a7d1a; }
   .ncs.sel .ob { border-color: #222; box-shadow: 0 0 0 1px #222; background: #fff; }
   .ncs.placed .ob { border-color: #1a3fd4; background: #f3f6ff; }
   .ncs.won .ob { border-color: #1a7d1a; background: #eefbee; color: #1a7d1a; } .ncs.lost .ob { background: #f4f4f4; color: #b3261e; }
@@ -388,6 +401,7 @@
     <span id="hdrTitle" style="font-size:12px;font-weight:bold;color:#222;white-space:nowrap;">Bet Blackjack</span>
     <button id="runBtn" onclick="toggleRunning()" style="display:none;border:1px solid #222;background:#fff;color:#222;font-size:12px;font-weight:bold;padding:5px 12px;border-radius:8px;white-space:nowrap;">Start non stop</button>
     <div class="history-strip" id="historyStrip"></div>
+    <button id="pauseBtn" onclick="togglePause()" title="Pause" style="border:1px solid #222;background:#fff;color:#222;width:26px;height:26px;border-radius:50%;font-weight:bold;font-size:10px;margin-right:6px;">❚❚</button>
     <button onclick="toggleInfoPanel(true)" style="border:1px solid #222;background:#fff;color:#222;width:26px;height:26px;border-radius:50%;font-weight:bold;">i</button>
   </div>
 
@@ -511,6 +525,9 @@
         <div class="lay-row"><span class="lbl">Arrangement</span>
           <button id="lay-stacked" onclick="setLayoutOption('arrangement','stacked')">Dealer above Player</button>
           <button id="lay-side" onclick="setLayoutOption('arrangement','side')">Side by side</button></div>
+        <div class="lay-row"><span class="lbl">Side by side order</span>
+          <button id="lay-DP" onclick="setLayoutOption('order','DP')">Dealer left</button>
+          <button id="lay-PD" onclick="setLayoutOption('order','PD')">Player left</button></div>
         <div class="lay-row"><span class="lbl">Card overlap display</span>
           <button id="lay-A" onclick="setLayoutOption('overlap','A')">From the first card</button>
           <button id="lay-B" onclick="setLayoutOption('overlap','B')">Only when row is full</button></div>
@@ -562,7 +579,7 @@
         </div>
         <div style="font-size:10px;color:#aaa;margin-top:6px;">The margin box at the top of this page only affects Dealer, Push and Player.</div>
       </div>
-      <div style="margin-top:16px;font-size:10px;color:#aaa;">Version: base game with manual / non stop game version, position / stake show/hide, opening odds options, side bets: both layouts (17 Nov)</div>
+      <div style="margin-top:16px;font-size:10px;color:#aaa;">Version: base game with manual / non stop game version, position / stake show/hide, opening odds options, side bets, P&L breakdown, pause, dealer/player order (18 Nov)</div>
     </div>
 
     <div class="info-page">
@@ -573,14 +590,13 @@
       </div>
       <div style="margin-top:16px;font-size:13px;color:#333;line-height:1.5;">
         <div style="font-size:11px;color:#888;margin-bottom:6px;">How to play</div>
-        <p class="mode-manual">The bettor will be able to bet on any outcome during any of the betting windows. Betting opens when a new hand is started and stays open at every point where action takes place Once a bet is placed, a cashout option will appear after every card is dealt. The bettor will also be able to bet on any other outcome at any time there is a live market.</p>
+        <p class="mode-manual">The bettor will be able to bet on any outcome during any of the betting windows. Betting opens when a new hand is started and stays open at every point where action takes place. Once a bet is placed, a cashout option will appear after every card is dealt. The bettor will also be able to bet on any other outcome at any time there is a live market.</p>
         <p class="mode-nonstop" style="display:none;">The bettor will be able to bet on any outcome during any of the betting windows. Betting opens before every hand and stays open at every point where action takes place. Once a bet is placed, a cashout option will appear after every card is dealt. The bettor will also be able to bet on any other outcome at any time there is a live market.</p>
         <p>The bettor types a stake on the keypad, or adds to it with the +£5, +£25 and +£100 buttons.</p>
-        <p>In the side by side layout, once the dealer has 11 or more and still has to draw, a box appears for "Dealer to draw" the card that would bring the dealer to exactly 21 (for example an 8 when the dealer has 13). A ten-value card means a 10, J, Q or K. The bet settles on the next card. If it misses and the dealer draws again, a new box opens for the new number, starting at £0. It cannot be cashed out.</p>
       </div>
-      <div style="margin-top:16px;">
+      <div style="margin-top:16px;font-size:13px;color:#333;line-height:1.5;">
         <div id="help-ppt" style="display:none;">
-        <p>In the side by side layout, PP (Perfect Pairs) and 21+3 can be bet on before the cards are dealt. They settle as soon as the first two cards are out and cannot be cashed out. Each circle shows the stake, then the net result until the hand ends.</p>
+        <p>PP (Perfect Pairs) and 21+3 can be bet on before the cards are dealt. They settle as soon as the first two cards are out and cannot be cashed out. Each circle shows the stake, then the net result until the hand ends.</p>
         <div style="font-size:11px;color:#888;margin:10px 0 6px;">Side bet payouts (decimal, stake included)</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px;">
           <div><b>PP · Perfect Pairs</b><br>Mixed pair 6.00<br>Coloured pair 11.00<br>Perfect pair 26.00<br><span style="color:#888;">Uses the player's first two cards.</span></div>
@@ -588,15 +604,15 @@
         </div>
         </div>
         <div id="help-bj" style="display:none;">
-        <p>In the side by side layout, three blackjack bets can be placed before the cards are dealt: Player BJ (the player is dealt a blackjack), Dealer BJ (the dealer is), and Both BJ (both are). Player BJ and Dealer BJ also win when the other hand has a blackjack too. They settle when the blackjack is known: the player's at the deal, the dealer's at the peek (or at the deal when the dealer's up-card is not an Ace or ten-value). They cannot be cashed out. Each circle shows its price, then the stake, then the net result until the hand ends.</p>
+        <p>Three blackjack bets can be placed before the cards are dealt: Player BJ (the player is dealt a blackjack), Dealer BJ (the dealer is), and Both BJ (both are). Player BJ and Dealer BJ also win when the other hand has a blackjack too. They settle when the blackjack is known: the player's at the deal, the dealer's at the peek (or at the deal when the dealer's up-card is not an Ace or ten-value). They cannot be cashed out. Each circle shows its price, then the stake, then the net result until the hand ends.</p>
         </div>
         <div id="help-nc" style="display:none;">
-        <p>In the side by side layout, once the dealer has 11 or more and still has to draw, a box appears for "Dealer to draw" the card that would bring the dealer to exactly 21 (for example an 8 when the dealer has 13). A ten-value card means a 10, J, Q or K. The bet settles on the next card. If it misses and the dealer draws again, a new box opens for the new number, starting at £0. It cannot be cashed out.</p>
+        <p>Once the dealer has 11 or more and still has to draw, a box appears for "Dealer to draw" the card that would bring the dealer to exactly 21 (for example an 8 when the dealer has 13). A ten-value card means a 10, J, Q or K. The bet settles on the next card. If it misses and the dealer draws again, a new box opens for the new number, starting at £0. It cannot be cashed out.</p>
         </div>
       </div>
       <div style="margin-top:16px;">
         <div style="font-size:11px;color:#888;margin-bottom:6px;">Session P&amp;L</div>
-        <div id="sessionRow" style="font-size:13px;color:#333;">Staked £0.00 · Returned £0.00 · Net £0.00</div>
+        <div id="sessionRow" style="font-size:12px;color:#333;"></div>
       </div>
     </div>
 
@@ -641,6 +657,65 @@
   </div>
 </div>
 
+<script>
+/* Pause support: every timer and the clock go through this wrapper so the whole game can be frozen
+   at any point (for screenshots) and carry on from exactly where it stopped. */
+(function () {
+  const realST = window.setTimeout.bind(window), realCT = window.clearTimeout.bind(window);
+  const realSI = window.setInterval.bind(window), realCI = window.clearInterval.bind(window);
+  const realNow = Date.now.bind(Date);
+  const timers = new Map();
+  let seq = 900000, frozen = false, frozenAt = 0, offset = 0;
+  Date.now = () => (frozen ? frozenAt : realNow()) - offset;
+  window.setTimeout = function (fn, delay, ...args) {
+    delay = Math.max(0, Number(delay) || 0);
+    const id = seq++;
+    const rec = { kind: 't', fn, args, delay, left: delay, start: realNow(), real: null, realKind: 't' };
+    rec.run = () => { timers.delete(id); fn(...args); };
+    if (!frozen) rec.real = realST(rec.run, delay);
+    timers.set(id, rec);
+    return id;
+  };
+  window.setInterval = function (fn, delay, ...args) {
+    delay = Math.max(1, Number(delay) || 0);
+    const id = seq++;
+    const rec = { kind: 'i', fn, args, delay, left: delay, start: realNow(), real: null, realKind: 'i' };
+    rec.run = () => { rec.start = realNow(); fn(...args); };
+    if (!frozen) rec.real = realSI(rec.run, delay);
+    timers.set(id, rec);
+    return id;
+  };
+  const clear = id => {
+    const rec = timers.get(id);
+    if (!rec) { realCT(id); return; }
+    if (rec.real !== null) (rec.realKind === 'i' ? realCI : realCT)(rec.real);
+    timers.delete(id);
+  };
+  window.clearTimeout = clear;
+  window.clearInterval = clear;
+  window.gameFrozen = () => frozen;
+  window.setGameFrozen = function (want) {
+    if (want === frozen) return;
+    if (want) {
+      frozen = true; frozenAt = realNow();
+      timers.forEach(rec => {
+        if (rec.real !== null) (rec.realKind === 'i' ? realCI : realCT)(rec.real);
+        rec.real = null;
+        rec.left = Math.max(0, rec.delay - (realNow() - rec.start)) || 0;
+        if (rec.kind === 'i') rec.left = Math.max(0, rec.delay - (frozenAt - rec.start));
+      });
+    } else {
+      offset += realNow() - frozenAt; frozen = false;
+      timers.forEach((rec, id) => {
+        rec.start = realNow() - (rec.delay - rec.left);
+        if (rec.kind === 't') { rec.real = realST(rec.run, rec.left); rec.realKind = 't'; }
+        else { rec.realKind = 't'; rec.real = realST(() => { rec.start = realNow(); rec.fn(...rec.args); rec.realKind = 'i'; rec.real = realSI(rec.run, rec.delay); }, rec.left); }
+      });
+    }
+    document.body.classList.toggle('frozen', frozen);
+  };
+})();
+</script>
 <script>/* ============================================================
    CORE — shared game backend, used by every visual skin.
    Contains: the engine (cards, shoe, strategy, dealer play),
@@ -928,6 +1003,14 @@ let currentOdds = { dealer: null, push: null, player: null };
 let bets = [];
 let sessionStaked = 0;
 let sessionReturned = 0;
+// Per-market ledger for the Session P&L: 'base' = Dealer / Push / Player, the rest are the side bets.
+const LEDGER_ORDER = ['perfect_pairs', 'two1plus3', 'bj_player', 'bj_dealer', 'bj_both', 'dealer_next_card'];
+const LEDGER_NAMES = { perfect_pairs: 'PP', two1plus3: '21+3', bj_player: 'Player BJ', bj_dealer: 'Dealer BJ', bj_both: 'Both BJ', dealer_next_card: 'Dealer\'s next card' };
+const ledger = { base: { s: 0, r: 0 } };
+LEDGER_ORDER.forEach(k => { ledger[k] = { s: 0, r: 0 }; });
+function ledgerKey(outcome) { return ledger.hasOwnProperty(outcome) ? outcome : 'base'; }
+function addStaked(outcome, v) { sessionStaked += v; ledger[ledgerKey(outcome)].s += v; }
+function addReturned(outcome, v) { sessionReturned += v; ledger[ledgerKey(outcome)].r += v; }
 let presetStakes = [10, 25, 50, 100];
 let sideBetResults = { perfect_pairs: null, two1plus3: null, bj_player: null, bj_dealer: null, bj_both: null };
 let pulseOn = true;
@@ -1112,14 +1195,20 @@ function tickStart() {
 
 // Non stop: Start / Pause freezes whatever countdown is showing and resumes it from the same point.
 function toggleRunning() {
-  isRunning = !isRunning;
-  if (isRunning) everStarted = true;
+  if (isRunning) { togglePause(); return; }
+  isRunning = true;
+  everStarted = true;
+  setRunningState(true);
+  if (pendingAdvanceFn) tickStart();
+}
+// One pause for both versions: freezes every timer and carries on from the same point.
+function togglePause() {
+  setGameFrozen(!gameFrozen());
+  const f = gameFrozen();
+  const pb = document.getElementById('pauseBtn');
+  pb.textContent = f ? '▶' : '❚❚';
+  pb.title = f ? 'Resume' : 'Pause';
   setRunningState(isRunning);
-  if (isRunning) {
-    if (pendingAdvanceFn) tickStart();
-  } else {
-    clearCountdownTimer();
-  }
 }
 function setPreDealSeconds(value) {
   const n = parseInt(value, 10);
@@ -1231,7 +1320,7 @@ function confirmSlip() {
     const stake = slip[outcome];
     if (stake && stake > 0 && currentOdds[outcome]) {
       bets.push({ stake, outcome, odds: currentOdds[outcome] });
-      sessionStaked += stake;
+      addStaked(outcome, stake);
     }
   });
   clearSlip();
@@ -1270,7 +1359,7 @@ function placeBet() {
     return;
   }
   bets.push({ stake, outcome: selected, odds: currentOdds[selected] });
-  sessionStaked += stake;
+  addStaked(selected, stake);
   clearStakeInput();
   selected = null;
   highlightSelected(null);
@@ -1299,7 +1388,7 @@ function editPresets() {
 function confirmCashout(outcome) {
   const value = cashoutValueFor(outcome);
   if (value === null) return;
-  sessionReturned += value;
+  addReturned(outcome, value);
   bets = bets.filter(b => b.outcome !== outcome);
   renderSession();
   renderBets();
@@ -1366,7 +1455,7 @@ function endHand(outcome) {
 
   bets.forEach(b => {
     if (b.outcome === outcome) {
-      sessionReturned += b.stake * b.odds;
+      addReturned(b.outcome, b.stake * b.odds);
     }
   });
   renderSession();
@@ -1415,7 +1504,7 @@ function settleBj(m, hit) {
   const stake = mine.reduce((t, b) => t + b.stake, 0);
   const ret = mine.reduce((t, b) => t + b.stake * b.odds, 0);
   sideBetResults[m] = { settled: true, stake, bet: stake > 0, hit, net: stake > 0 ? (hit ? ret - stake : -stake) : 0 };
-  if (stake > 0 && hit) sessionReturned += ret;
+  if (stake > 0 && hit) addReturned(m, ret);
   if (stake === 0 && hit) pulseCards(m === 'bj_player' ? ['playerFan'] : m === 'bj_dealer' ? ['dealerFan'] : ['playerFan', 'dealerFan']);
   holdForNextCard(stake > 0);
   renderSession();
@@ -1450,7 +1539,7 @@ function settleSideBets() {
     const stake = sideStake(m);
     sideBetResults[m] = { settled: true, stake, bet: stake > 0, hit: !!res, net: stake > 0 ? (res ? stake * (res.payout - 1) : -stake) : 0 };
     holdForNextCard(stake > 0);
-    if (stake > 0 && res) sessionReturned += stake * res.payout;
+    if (stake > 0 && res) addReturned(m, stake * res.payout);
     // A winning hand with no bet on it: a quiet pulse on the cards that made it.
     if (stake === 0 && res && pulseOn) {
       const ids = ['playerFan'].concat(m === 'two1plus3' ? ['dealerFan'] : []);
@@ -1514,7 +1603,7 @@ function settleDealerNextCard(drawnCard) {
 
     if (matched) {
       const amount = totalStake * target.payout;
-      sessionReturned += amount;
+      addReturned('dealer_next_card', amount);
       if (typeof setDealerNextCardResult === 'function') setDealerNextCardResult({ won: true, net: amount - totalStake, rankLabel: target.rankLabel, value: target.value });
     } else {
       if (typeof setDealerNextCardResult === 'function') setDealerNextCardResult({ won: false, net: -totalStake, rankLabel: target.rankLabel, value: target.value });
@@ -1770,11 +1859,11 @@ let lastCards = {};
 
 // ---- Cards layout setting (info page). Applied between hands, never mid-hand. ----
 const LAYOUT_KEY = 'bj_cards_layout';
-let layout = { arrangement: 'stacked', overlap: 'A' };
+let layout = { arrangement: 'stacked', overlap: 'A', order: 'DP' };
 let pendingLayout = null;
 try {
   const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null');
-  if (saved && (saved.arrangement === 'stacked' || saved.arrangement === 'side') && (saved.overlap === 'A' || saved.overlap === 'B')) layout = saved;
+  if (saved && (saved.arrangement === 'stacked' || saved.arrangement === 'side') && (saved.overlap === 'A' || saved.overlap === 'B')) layout = Object.assign({ order: 'DP' }, saved);
 } catch (e) { /* storage unavailable: keep the default */ }
 
 
@@ -1831,10 +1920,16 @@ function setDealerNextCardResult(res) {
   if (res) { ncResultUntil = Date.now() + 2000; ncTimer = setTimeout(renderSideBets, 2050); } else ncResultUntil = 0;
   renderSideBets();
 }
+const SUIT_CHARS = [['♠', false], ['♥', true], ['♦', true], ['♣', false]];
+function ncCardsHtml(t) {
+  if (t.value === 10) return '<div class="mcs">' + ['10', 'J', 'Q', 'K'].map(r => '<div class="mc any">' + r + '</div>').join('') + '</div>';
+  return '<div class="mcs">' + SUIT_CHARS.map(([ch, red]) => '<div class="mc' + (red ? ' rd' : '') + '">' + t.rankLabel + '<i>' + ch + '</i></div>').join('') + '</div>';
+}
+
 function renderNcSquare(row, showResult, t) {
   ncSeen = true;
-  const name = 'Dealer to draw';
-  const num = (t.value === 10 ? 'a 10-value' : ncArticle(t.rankLabel) + ' ' + t.rankLabel);
+  const name = t.value === 10 ? 'Dealer to draw any' : 'Dealer to draw';
+  const cards = ncCardsHtml(t);
   const stake = showResult ? 0 : bets.filter(b => b.outcome === 'dealer_next_card').reduce((x, b) => x + b.stake, 0);
   let cls = '', big = '', small = '';
   if (showResult) {
@@ -1849,12 +1944,12 @@ function renderNcSquare(row, showResult, t) {
   }
   const tap = showResult ? '' : ' onclick="toggleSlipLine(\'dealer_next_card\')"';
   if (!sideLayoutOn()) {
-    row.innerHTML = '<div class="ncb' + cls + '"' + tap + '><div class="l"><small>' + name + '</small>' + num + '</div><div class="r">' + big + (small ? '<small>' + small + '</small>' : '') + '</div></div>';
+    row.innerHTML = '<div class="ncb' + cls + '"' + tap + '><div class="l"><small>' + name + '</small>' + cards + '</div><div class="r">' + big + (small ? '<small>' + small + '</small>' : '') + '</div></div>';
     return;
   }
   row.innerHTML = ncStyle === 'one'
-    ? '<div class="nc' + cls + '"' + tap + '><div class="n">' + name + '</div><div class="t">' + num + '</div><div class="o">' + big + '</div><div class="p">' + small + '</div></div>'
-    : '<div class="ncs' + cls + '"' + tap + '><div class="cap">' + name + ' ' + num + '</div><div class="ob">' + big + '</div><div class="pb">' + small + '</div></div>';
+    ? '<div class="nc' + cls + '"' + tap + '><div class="n' + (t.value === 10 ? ' long' : '') + '">' + name + '</div><div class="t">' + cards + '</div><div class="o">' + big + '</div><div class="p">' + small + '</div></div>'
+    : '<div class="ncs' + cls + '"' + tap + '><div class="cap">' + name + cards + '</div><div class="ob">' + big + '</div><div class="pb">' + small + '</div></div>';
 }
 
 function renderSideCircles(row, keys) {
@@ -1967,7 +2062,7 @@ function applyLayout() {
   if (pendingLayout) { layout = pendingLayout; pendingLayout = null; }
   if (gameMode === 'nonstop' && phase === 'pre_deal' && typeof preDealOdds === 'function') setOddsDisplay(preDealOdds());
   const side = layout.arrangement === 'side';
-  document.getElementById('cardsWrap').className = side ? 'cards-pair' : 'cards-stack';
+  document.getElementById('cardsWrap').className = side ? 'cards-pair' + (layout.order === 'PD' ? ' swap' : '') : 'cards-stack';
   applySideConfig();
   rerenderCards();
   renderLayoutControls();
@@ -1983,6 +2078,7 @@ function renderLayoutControls() {
   const shown = pendingLayout || layout;
   ['stacked', 'side'].forEach(v => document.getElementById('lay-' + v).classList.toggle('on', shown.arrangement === v));
   ['A', 'B'].forEach(v => document.getElementById('lay-' + v).classList.toggle('on', shown.overlap === v));
+  ['DP', 'PD'].forEach(v => document.getElementById('lay-' + v).classList.toggle('on', (shown.order || 'DP') === v));
   document.getElementById('layNote').textContent = pendingLayout ? 'Takes effect when the next hand starts.' : '';
 }
 
@@ -2154,10 +2250,19 @@ function renderPositions() {
 }
 
 function renderSession() {
-  const net = sessionReturned - sessionStaked;
-  const sign = net >= 0 ? '+' : '-';
-  document.getElementById('sessionRow').textContent =
-    `Staked £${sessionStaked.toFixed(2)} · Returned £${sessionReturned.toFixed(2)} · Net ${sign}£${Math.abs(net).toFixed(2)}`;
+  const fmt = v => '£' + v.toFixed(2);
+  const netTxt = n => (n >= 0 ? '+' : '-') + '£' + Math.abs(n).toFixed(2);
+  const row = (label, st, rt, cls) => `<div class="pl ${cls || ''}"><span>${label}</span><span>${fmt(st)}</span><span>${fmt(rt)}</span><span class="${rt - st < -0.004 ? 'neg' : (rt - st > 0.004 ? 'pos' : '')}">${netTxt(rt - st)}</span></div>`;
+  const live = k => (k === 'perfect_pairs' || k === 'two1plus3') ? sideGroup === 'ppt' : (k === 'dealer_next_card' ? ncOn : sideGroup === 'bj');
+  const shown = LEDGER_ORDER.filter(k => live(k) || ledger[k].s > 0 || ledger[k].r > 0);
+  let sideS = 0, sideR = 0;
+  LEDGER_ORDER.forEach(k => { sideS += ledger[k].s; sideR += ledger[k].r; });
+  let html = '<div class="pl hd"><span></span><span>Stake</span><span>Returned</span><span>Net</span></div>';
+  html += row('Total', sessionStaked, sessionReturned, 'tot');
+  html += row('Base game', ledger.base.s, ledger.base.r);
+  shown.forEach(k => { html += row(LEDGER_NAMES[k], ledger[k].s, ledger[k].r, 'sub'); });
+  if (shown.length) html += row('Side bets total', sideS, sideR, 'tot');
+  document.getElementById('sessionRow').innerHTML = html;
 }
 
 function renderCashoutOptions() {
@@ -2236,7 +2341,7 @@ function onInfoPagesScroll() {
 
 function setRunningState(running) {
   const btn = document.getElementById('runBtn');
-  btn.textContent = running ? 'Pause' : 'Start non stop';
+  btn.textContent = !running ? 'Start non stop' : (window.gameFrozen && gameFrozen() ? 'Resume' : 'Pause');
   btn.style.background = running ? '#222' : '#fff';
   btn.style.color = running ? '#fff' : '#222';
 }
