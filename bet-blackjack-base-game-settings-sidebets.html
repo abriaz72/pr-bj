@@ -483,6 +483,14 @@
   <div class="info-pages" id="infoPages" onscroll="onInfoPagesScroll()">
     <div class="info-page">
       <div style="margin-top:16px;">
+        <div style="font-size:11px;color:#888;margin-bottom:6px;">Game version</div>
+        <div style="font-size:12px;color:#555;line-height:1.4;margin-bottom:8px;">The manual version requires the bettor to start it. Non stop will run continuously once selected and allows different time settings for decision making. Pressing pause will stop the game.</div>
+        <div class="lay-row">
+          <button id="gm-manual" onclick="setGameMode('manual')">Manual</button>
+          <button id="gm-nonstop" onclick="setGameMode('nonstop')">Non stop</button></div>
+        <div id="gmNote" style="font-size:11px;color:#b36b00;min-height:14px;"></div>
+      </div>
+      <div style="margin-top:16px;">
         <div style="font-size:11px;color:#888;margin-bottom:6px;">Set margin</div>
         <select id="marginSelect" onchange="onMarginChange()">
           <option value="0.02">2%</option>
@@ -510,14 +518,6 @@
           <span style="font-size:13px;color:#555;">Time for in game actions</span>
           <span>Other <input type="number" id="otherSecInput" value="10" onchange="setOtherSeconds(this.value)" style="width:34px;"></span>
         </div>
-      </div>
-      <div style="margin-top:16px;">
-        <div style="font-size:11px;color:#888;margin-bottom:6px;">Game version</div>
-        <div style="font-size:12px;color:#555;line-height:1.4;margin-bottom:8px;">The manual version requires the bettor to start it. Non stop will run continuously once selected and allows different time settings for decision making. Pressing pause will stop the game.</div>
-        <div class="lay-row">
-          <button id="gm-manual" onclick="setGameMode('manual')">Manual</button>
-          <button id="gm-nonstop" onclick="setGameMode('nonstop')">Non stop</button></div>
-        <div id="gmNote" style="font-size:11px;color:#b36b00;min-height:14px;"></div>
       </div>
       <div style="margin-top:16px;">
         <div style="font-size:11px;color:#888;margin-bottom:6px;">Layout</div>
